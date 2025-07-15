@@ -14,7 +14,7 @@ const Register = () => {
     e.preventDefault();
     setMessage("");
     try {
-      await axios.post("http://localhost:5000/api/users/register", {
+      await axios.post("https://backend-g-sigma.vercel.app/api/users/register", {
         name,
         email,
         password,
