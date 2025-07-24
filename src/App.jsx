@@ -8,6 +8,7 @@ import Addproduct from './Products/AddProducts';
 import Lists from './users/ProductList'; 
 import Edit from './Products/EditProduct'; 
 import Cart  from './pages/cart';
+import Profile from './users/profile';
 
 
 const App = () => {
@@ -26,6 +27,7 @@ const App = () => {
         <Route path="/ProductList" element={<Lists />} />
         <Route path="/EditProduct/:id" element={<Edit />} />
         <Route path="/cart" element={<Cart />} />
+        <Route path="/profile" element={<Profile />} />
         
         {/* Redirect any unknown paths to login */}
 
