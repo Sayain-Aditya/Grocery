@@ -48,6 +48,7 @@ const Dashboard = () => {
           >
             View Profile
           </button>
+          
         </div>
       )}
     </div>

@@ -10,6 +10,11 @@ import Edit from './Products/EditProduct';
 import Cart  from './pages/cart';
 import Profile from './users/profile';
 
+import OrderPage from './pages/order'; // Import OrderPage component
+import AdminOrderList from './dash/AdminOrderList';
+import UserOrderHistory from './users/UserOrderHistory';
+import InvoicePage from './users/InvoicePage';
+
 
 const App = () => {
   return (
@@ -21,6 +26,7 @@ const App = () => {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/Dashboard" element={<Dashboard />} />
 
+
         {/* Protected admin route */}
         <Route path="/admin" element={<RequireAdmin><AdminDashboard /></RequireAdmin>} />
         <Route path="/AddProducts" element={<Addproduct />} />
@@ -28,6 +34,10 @@ const App = () => {
         <Route path="/EditProduct/:id" element={<Edit />} />
         <Route path="/cart" element={<Cart />} />
         <Route path="/profile" element={<Profile />} />
+        <Route path="/order" element={<OrderPage />} />
+        <Route path="/admin/orders" element={<RequireAdmin><AdminOrderList /></RequireAdmin>} />
+        <Route path="/my-orders" element={<UserOrderHistory />} />
+        <Route path="/invoice/:id" element={<InvoicePage />} />
         
         {/* Redirect any unknown paths to login */}
 

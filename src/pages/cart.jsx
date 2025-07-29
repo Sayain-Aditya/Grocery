@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { toast, ToastContainer } from "react-toastify";
+import { useNavigate } from "react-router-dom";
 
 const Cart = () => {
   const [cartItems, setCartItems] = useState([]);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   const fetchCart = async () => {
     try {
@@ -123,23 +125,31 @@ const Cart = () => {
           <div className="text-right font-bold text-xl mt-6">
             Total: ₹{total.toFixed(2)}
           </div>
-          <button
-            onClick={async () => {
-              try {
-                const token = localStorage.getItem("token");
-                await axios.delete("https://backend-g-sigma.vercel.app/api/cart/clear", {
-                  headers: { Authorization: `Bearer ${token}` },
-                });
-                toast.success("Cart cleared!");
-                fetchCart();
-              } catch (err) {
-                toast.error("Failed to clear cart");
-              }
-            }}
-            className="mt-4 bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
-          >
-            Clear Cart
-          </button>
+          <div className="flex gap-4 mt-4">
+            <button
+              onClick={() => navigate("/order")}
+              className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+            >
+              Place Order
+            </button>
+            <button
+              onClick={async () => {
+                try {
+                  const token = localStorage.getItem("token");
+                  await axios.delete("https://backend-g-sigma.vercel.app/api/cart/clear", {
+                    headers: { Authorization: `Bearer ${token}` },
+                  });
+                  toast.success("Cart cleared!");
+                  fetchCart();
+                } catch (err) {
+                  toast.error("Failed to clear cart");
+                }
+              }}
+              className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
+            >
+              Clear Cart
+            </button>
+          </div>
         </div>
       )}
     </div>
