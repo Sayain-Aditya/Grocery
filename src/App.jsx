@@ -1,5 +1,6 @@
 import React from 'react';
 import { BrowserRouter, Route, Routes, Navigate } from 'react-router-dom';
+import HomePage from './pages/HomePage';
 import LoginPage from './pages/loginPage';
 import Dashboard from './dash/Dashboard';
 import AdminDashboard from './dash/AdminDashboard';
@@ -21,8 +22,9 @@ const App = () => {
     <BrowserRouter>
       <Routes>
         <Route path="/register" element={<Register />} />
-        {/* Redirect root path to login */}
-        <Route path="/" element={<Navigate to="/login" />} />
+        {/* Home page as root */}
+        <Route path="/" element={<HomePage />} />
+        <Route path="/home" element={<HomePage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/Dashboard" element={<Dashboard />} />
 
@@ -31,6 +33,7 @@ const App = () => {
         <Route path="/admin" element={<RequireAdmin><AdminDashboard /></RequireAdmin>} />
         <Route path="/AddProducts" element={<Addproduct />} />
         <Route path="/ProductList" element={<Lists />} />
+        <Route path="/products" element={<Lists />} />
         <Route path="/EditProduct/:id" element={<Edit />} />
         <Route path="/cart" element={<Cart />} />
         <Route path="/profile" element={<Profile />} />
