@@ -10,7 +10,7 @@ const AdminOrderList = () => {
     const fetchOrders = async () => {
       try {
         const token = localStorage.getItem("token");
-        const res = await axios.get("https://backend-g-sigma.vercel.app/api/orders", {
+        const res = await axios.get("http://localhost:5000/api/orders", {
           headers: { Authorization: `Bearer ${token}` },
         });
         setOrders(res.data);
@@ -26,7 +26,7 @@ const AdminOrderList = () => {
   const handleStaustChnage = async (orderId, status) => {
     try{
         const token = localStorage.getItem("token");
-        await axios.put(`https://backend-g-sigma.vercel.app/api/orders/update/${orderId}/status`,
+        await axios.put(`http://localhost:5000/api/orders/update/${orderId}/status`,
             { status },
             { headers: { Authorization: `Bearer ${token}` } }
         );

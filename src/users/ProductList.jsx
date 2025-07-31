@@ -8,6 +8,7 @@ const ProductList = () => {
   const [products, setProducts] = React.useState([]);
   const [admin, setAdmin] = React.useState(false);
   const [refresh, setRefresh] = React.useState(false);
+  const [loading, setLoading] = React.useState(false);
 
   const [search, setSearch] = React.useState("");
   const [category, setCategory] = React.useState("");
@@ -15,12 +16,15 @@ const ProductList = () => {
   const [inStock, setInStock] = React.useState(false);
   const [quantities, setQuantities] = React.useState({});
   const [cartCount, setCartCount] = React.useState(0);
+  const [currentPage, setCurrentPage] = React.useState(1);
+  const [totalPages, setTotalPages] = React.useState(1);
+  const [totalProducts, setTotalProducts] = React.useState(0);
 
   useEffect(() => {
     const fetchCartCount = async () => {
       try {
         const token = localStorage.getItem("token");
-        const res = await axios.get("https://backend-g-sigma.vercel.app/api/cart/get", {
+        const res = await axios.get("http://localhost:5000/api/cart/get", {
           headers: { Authorization: `Bearer ${token}` },
         });
         setCartCount(
@@ -34,23 +38,36 @@ const ProductList = () => {
     fetchCartCount();
   }, []);
   useEffect(() => {
-    const fetchProducts = async () => {
-      try {
-        const res = await axios.get("https://backend-g-sigma.vercel.app/api/products/get");
-        setProducts(res.data);
-      } catch (err) {
-        console.error("Error fetching products:", err);
-      }
-    };
     fetchProducts();
     const user = JSON.parse(localStorage.getItem("user"));
     setAdmin(user?.role === "admin");
-  }, [refresh]);
+  }, [refresh, currentPage, search, category]);
+
+  const fetchProducts = async () => {
+    try {
+      setLoading(true);
+      const params = new URLSearchParams({
+        page: currentPage,
+        limit: 8,
+        ...(search && { search }),
+        ...(category && category !== 'All' && { category })
+      });
+      
+      const res = await axios.get(`http://localhost:5000/api/products/get?${params}`);
+      setProducts(res.data.products);
+      setTotalPages(res.data.totalPages);
+      setTotalProducts(res.data.totalProducts);
+    } catch (err) {
+      console.error("Error fetching products:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleDelete = async (id) => {
     try {
       const token = localStorage.getItem("token");
-      await axios.delete(`https://backend-g-sigma.vercel.app/api/products/delete/${id}`, {
+      await axios.delete(`http://localhost:5000/api/products/delete/${id}`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -75,7 +92,7 @@ const ProductList = () => {
 
     try {
       await axios.post(
-        "https://backend-g-sigma.vercel.app/api/cart/add",
+        "http://localhost:5000/api/cart/add",
         { productId, qty },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -86,9 +103,8 @@ const ProductList = () => {
     }
   };
 
+  // Client-side filtering for price and stock (server handles search and category)
   const filterProducts = products
-    .filter((p) => p.name.toLowerCase().includes(search.toLowerCase()))
-    .filter((p) => (category === "All" ? true : p.category === category))
     .filter((p) => {
       const price = Number(p.price);
       if (priceRange === "under-500") return price < 500;
@@ -97,6 +113,21 @@ const ProductList = () => {
       return true;
     })
     .filter((p) => (inStock ? p.stock > 0 : true));
+
+  const paginate = (pageNumber) => {
+    setCurrentPage(pageNumber);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleSearchChange = (value) => {
+    setSearch(value);
+    setCurrentPage(1);
+  };
+
+  const handleCategoryChange = (value) => {
+    setCategory(value);
+    setCurrentPage(1);
+  };
 
   const allCategories = ["All", ...new Set(products.map((p) => p.category))];
 
@@ -113,12 +144,12 @@ const ProductList = () => {
           placeholder="Search by name"
           className="p-2 border border-gray-300 rounded w-full"
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={(e) => handleSearchChange(e.target.value)}
         />
         <select
           className="p-2 border border-gray-300 rounded w-full"
           value={category}
-          onChange={(e) => setCategory(e.target.value)}
+          onChange={(e) => handleCategoryChange(e.target.value)}
         >
           {allCategories.map((cat) => (
             <option key={cat} value={cat}>
@@ -154,6 +185,10 @@ const ProductList = () => {
       ) : filterProducts.length === 0 ? (
         <div className="text-center text-gray-500 text-lg py-16">
           No products match the selected filters.
+        </div>
+      ) : loading ? (
+        <div className="text-center py-16">
+          <div className="text-lg text-gray-600">Loading products...</div>
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
@@ -245,14 +280,73 @@ const ProductList = () => {
           ))}
         </div>
       )}
-      <Link to="/cart" className="relative">
-        🛒 Cart
-        {cartCount > 0 && (
-          <span className="absolute -top-2 -right-2 bg-red-600 text-white text-xs px-1.5 py-0.5 rounded-full">
-            {cartCount}
-          </span>
+        
+        {/* Pagination */}
+        {!loading && totalPages > 1 && (
+          <div className="text-center mb-4 text-gray-600">
+            Showing {filterProducts.length} of {totalProducts} products
+          </div>
         )}
-      </Link>
+        {!loading && totalPages > 1 && (
+          <div className="flex justify-center mt-8">
+            <div className="flex gap-2">
+              {currentPage > 1 ? (
+                <button
+                  onClick={() => paginate(currentPage - 1)}
+                  className="px-3 py-2 border rounded hover:bg-gray-100"
+                >
+                  Previous
+                </button>
+              ) : (
+                <button
+                  className="px-3 py-2 border rounded opacity-50 cursor-not-allowed"
+                >
+                  Previous
+                </button>
+              )}
+              
+              {[...Array(totalPages)].map((_, index) => (
+                <button
+                  key={index + 1}
+                  onClick={() => paginate(index + 1)}
+                  className={`px-3 py-2 border rounded ${
+                    currentPage === index + 1
+                      ? 'bg-green-600 text-white'
+                      : 'hover:bg-gray-100'
+                  }`}
+                >
+                  {index + 1}
+                </button>
+              ))}
+              
+              {currentPage < totalPages ? (
+                <button
+                  onClick={() => paginate(currentPage + 1)}
+                  className="px-3 py-2 border rounded hover:bg-gray-100"
+                >
+                  Next
+                </button>
+              ) : (
+                <button
+                  className="px-3 py-2 border rounded opacity-50 cursor-not-allowed"
+                >
+                  Next
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+      
+      <div className="fixed bottom-4 right-4">
+        <Link to="/cart" className="relative bg-green-600 text-white px-4 py-2 rounded-full shadow-lg hover:bg-green-700">
+          🛒 Cart
+          {cartCount > 0 && (
+            <span className="absolute -top-2 -right-2 bg-red-600 text-white text-xs px-1.5 py-0.5 rounded-full">
+              {cartCount}
+            </span>
+          )}
+        </Link>
+      </div>
     </div>
   );
 };

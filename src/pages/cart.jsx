@@ -11,7 +11,7 @@ const Cart = () => {
   const fetchCart = async () => {
     try {
       const token = localStorage.getItem("token");
-      const res = await axios.get("https://backend-g-sigma.vercel.app/api/cart/get", {
+      const res = await axios.get("http://localhost:5000/api/cart/get", {
         headers: { Authorization: `Bearer ${token}` },
       });
       setCartItems(res.data);
@@ -31,7 +31,7 @@ const Cart = () => {
     try {
       const token = localStorage.getItem("token");
       await axios.put(
-        `https://backend-g-sigma.vercel.app/api/cart/update/${itemId}`,
+        `http://localhost:5000/api/cart/update/${itemId}`,
         { qty },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -46,7 +46,7 @@ const Cart = () => {
   const handleRemove = async (itemId) => {
     try {
       const token = localStorage.getItem("token");
-      await axios.delete(`https://backend-g-sigma.vercel.app/api/cart/remove/${itemId}`, {
+      await axios.delete(`http://localhost:5000/api/cart/remove/${itemId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       toast.success("Item removed!");
@@ -60,7 +60,7 @@ const Cart = () => {
   const handleClearCart = async () => {
     try {
       const token = localStorage.getItem("token");
-      await axios.delete("https://backend-g-sigma.vercel.app/api/cart/clear", {
+      await axios.delete("http://localhost:5000/api/cart/clear", {
         headers: { Authorization: `Bearer ${token}` },
       });
       toast.success("Cart cleared!");
@@ -104,15 +104,22 @@ const Cart = () => {
                 </div>
               </div>
               <div className="flex items-center gap-4">
-                <input
-                  type="number"
-                  min="1"
-                  value={qty}
-                  onChange={(e) =>
-                    handleQtyChange(_id, Number(e.target.value))
-                  }
-                  className="w-16 px-2 py-1 border rounded text-center"
-                />
+                <div className="flex items-center border rounded">
+                  <button
+                    onClick={() => handleQtyChange(_id, Math.max(1, qty - 1))}
+                    className="px-3 py-1 hover:bg-gray-100"
+                    disabled={qty <= 1}
+                  >
+                    -
+                  </button>
+                  <span className="px-4 py-1 border-x">{qty}</span>
+                  <button
+                    onClick={() => handleQtyChange(_id, qty + 1)}
+                    className="px-3 py-1 hover:bg-gray-100"
+                  >
+                    +
+                  </button>
+                </div>
                 <button
                   onClick={() => handleRemove(_id)}
                   className="text-red-600 font-medium hover:underline"
@@ -136,7 +143,7 @@ const Cart = () => {
               onClick={async () => {
                 try {
                   const token = localStorage.getItem("token");
-                  await axios.delete("https://backend-g-sigma.vercel.app/api/cart/clear", {
+                  await axios.delete("http://localhost:5000/api/cart/clear", {
                     headers: { Authorization: `Bearer ${token}` },
                   });
                   toast.success("Cart cleared!");

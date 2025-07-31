@@ -7,6 +7,7 @@ const HomePage = () => {
   const [user, setUser] = useState(null);
   const [recentOrders, setRecentOrders] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
+  const [cartCount, setCartCount] = useState(0);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -14,13 +15,14 @@ const HomePage = () => {
     if (userData) {
       setUser(JSON.parse(userData));
       fetchRecentOrders();
+      fetchCartCount();
     }
     fetchProducts();
   }, []);
 
   const fetchProducts = async () => {
     try {
-      const res = await axios.get("https://backend-g-sigma.vercel.app/api/products/get");
+      const res = await axios.get("http://localhost:5000/api/products/get");
       setProducts(res.data.slice(0, 8)); // Show first 8 products
     } catch (err) {
       console.error("Failed to fetch products");
@@ -30,12 +32,24 @@ const HomePage = () => {
   const fetchRecentOrders = async () => {
     try {
       const token = localStorage.getItem("token");
-      const res = await axios.get("https://backend-g-sigma.vercel.app/api/orders/my", {
+      const res = await axios.get("http://localhost:5000/api/orders/my", {
         headers: { Authorization: `Bearer ${token}` }
       });
       setRecentOrders(res.data.slice(0, 3));
     } catch (err) {
       console.error("Failed to fetch recent orders");
+    }
+  };
+
+  const fetchCartCount = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const res = await axios.get("http://localhost:5000/api/cart/get", {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setCartCount(res.data.length);
+    } catch (err) {
+      console.error("Failed to fetch cart count");
     }
   };
 
@@ -47,10 +61,11 @@ const HomePage = () => {
         return;
       }
       await axios.post(
-        "https://backend-g-sigma.vercel.app/api/cart/add",
+        "http://localhost:5000/api/cart/add",
         { productId, qty: 1 },
         { headers: { Authorization: `Bearer ${token}` } }
       );
+      fetchCartCount(); // Update cart count
       alert("Added to cart!");
     } catch (err) {
       console.error("Failed to add to cart");
@@ -98,8 +113,13 @@ const HomePage = () => {
             {user ? (
               <>
                 <span className="text-gray-600">Hi, {user.name}!</span>
-                <button onClick={() => navigate("/cart")} className="bg-green-600 text-white px-4 py-2 rounded">
+                <button onClick={() => navigate("/cart")} className="bg-green-600 text-white px-4 py-2 rounded relative">
                   Cart
+                  {cartCount > 0 && (
+                    <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                      {cartCount}
+                    </span>
+                  )}
                 </button>
                 <button onClick={() => navigate("/my-orders")} className="bg-orange-600 text-white px-4 py-2 rounded">
                   Orders
