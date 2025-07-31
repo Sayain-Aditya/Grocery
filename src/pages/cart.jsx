@@ -134,10 +134,10 @@ const Cart = () => {
           </div>
           <div className="flex gap-4 mt-4">
             <button
-              onClick={() => navigate("/order")}
+              onClick={() => navigate("/checkout")}
               className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
             >
-              Place Order
+              Proceed to Checkout
             </button>
             <button
               onClick={async () => {

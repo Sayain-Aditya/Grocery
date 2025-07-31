@@ -12,6 +12,7 @@ import Cart  from './pages/cart';
 import Profile from './users/profile';
 
 import OrderPage from './pages/order'; // Import OrderPage component
+import CheckoutPage from './pages/CheckoutPage';
 import AdminOrderList from './dash/AdminOrderList';
 import UserOrderHistory from './users/UserOrderHistory';
 import InvoicePage from './users/InvoicePage';
@@ -37,6 +38,7 @@ const App = () => {
         <Route path="/EditProduct/:id" element={<Edit />} />
         <Route path="/cart" element={<Cart />} />
         <Route path="/profile" element={<Profile />} />
+        <Route path="/checkout" element={<CheckoutPage />} />
         <Route path="/order" element={<OrderPage />} />
         <Route path="/admin/orders" element={<RequireAdmin><AdminOrderList /></RequireAdmin>} />
         <Route path="/my-orders" element={<UserOrderHistory />} />
