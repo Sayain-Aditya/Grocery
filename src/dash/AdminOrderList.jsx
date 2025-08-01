@@ -5,12 +5,13 @@ const AdminOrderList = () => {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [search, setSearch] = useState("");
 
   useEffect(() => {
     const fetchOrders = async () => {
       try {
         const token = localStorage.getItem("token");
-        const res = await axios.get("http://localhost:5000/api/orders", {
+        const res = await axios.get("https://backend-g-sigma.vercel.app/api/orders", {
           headers: { Authorization: `Bearer ${token}` },
         });
         setOrders(res.data);
@@ -24,24 +25,62 @@ const AdminOrderList = () => {
   }, []);
 
   const handleStaustChnage = async (orderId, status) => {
-    try{
-        const token = localStorage.getItem("token");
-        await axios.put(`http://localhost:5000/api/orders/update/${orderId}/status`,
-            { status },
-            { headers: { Authorization: `Bearer ${token}` } }
-        );
-        setOrders(orders.map(order =>
-            order._id === orderId ? { ...order, status } : order
-        ));
-        toast.success("Order status updated!");
-        }catch(err){
-            toast.error("Failed to update order status");
-        }
+    try {
+      const token = localStorage.getItem("token");
+      await axios.put(
+        `https://backend-g-sigma.vercel.app/api/orders/update/${orderId}/status`,
+        { status },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setOrders(
+        orders.map((order) =>
+          order._id === orderId ? { ...order, status } : order
+        )
+      );
+      toast.success("Order status updated!");
+    } catch (err) {
+      toast.error("Failed to update order status");
     }
+  };
+
+  const handleSearch = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      const token = localStorage.getItem("token");
+      const res = await axios.get(
+        `https://backend-g-sigma.vercel.app/api/orders/search?query=${encodeURIComponent(
+          search
+        )}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setOrders(res.data.results);
+      setError("");
+    } catch (err) {
+      setError("Search failed");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="p-6">
       <h2 className="text-2xl font-bold mb-4">All Orders</h2>
+      <form onSubmit={handleSearch} className="mb-4 flex gap-2">
+        <input
+          type="text"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search orders by status, name, city..."
+          className="p-2 border rounded w-64"
+        />
+        <button
+          type="submit"
+          className="bg-blue-600 text-white px-4 py-2 rounded"
+        >
+          Search
+        </button>
+      </form>
       {loading ? (
         <p>Loading...</p>
       ) : error ? (
@@ -65,7 +104,12 @@ const AdminOrderList = () => {
               {orders.map((order) => (
                 <tr key={order._id} className="border-b">
                   <td className="p-2 border">{order._id}</td>
-                  <td className="p-2 border">{order.user?.name || "-"} <br /><span className="text-xs text-gray-500">{order.user?.email}</span></td>
+                  <td className="p-2 border">
+                    {order.user?.name || "-"} <br />
+                    <span className="text-xs text-gray-500">
+                      {order.user?.email}
+                    </span>
+                  </td>
                   <td className="p-2 border">
                     <ul className="list-disc ml-4">
                       {order.items.map((item, idx) => (
@@ -79,7 +123,9 @@ const AdminOrderList = () => {
                   <td className="p-2 border">
                     <select
                       value={order.status}
-                      onChange={e => handleStaustChnage(order._id, e.target.value)}
+                      onChange={(e) =>
+                        handleStaustChnage(order._id, e.target.value)
+                      }
                       className="border rounded px-2 py-1"
                     >
                       <option value="pending">Pending</option>
@@ -89,7 +135,9 @@ const AdminOrderList = () => {
                       <option value="complete">Complete</option>
                     </select>
                   </td>
-                  <td className="p-2 border">{new Date(order.createdAt).toLocaleString()}</td>
+                  <td className="p-2 border">
+                    {new Date(order.createdAt).toLocaleString()}
+                  </td>
                 </tr>
               ))}
             </tbody>

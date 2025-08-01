@@ -33,7 +33,7 @@ const AddProducts = () => {
     setMessage("");
     try {
       const token = localStorage.getItem("token");
-      await axios.post("http://localhost:5000/api/products/add", form, {
+      await axios.post("https://backend-g-sigma.vercel.app/api/products/add", form, {
         headers: {
           Authorization: `Bearer ${token}`,
         },

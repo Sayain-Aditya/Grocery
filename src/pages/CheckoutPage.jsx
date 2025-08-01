@@ -49,7 +49,7 @@ const CheckoutPage = () => {
         return;
       }
       
-      const res = await axios.get("http://localhost:5000/api/cart/get", {
+      const res = await axios.get("https://backend-g-sigma.vercel.app/api/cart/get", {
         headers: { Authorization: `Bearer ${token}` },
       });
       
@@ -95,7 +95,7 @@ const CheckoutPage = () => {
       }));
 
       await axios.post(
-        "http://localhost:5000/api/orders",
+        "https://backend-g-sigma.vercel.app/api/orders",
         { 
           items, 
           total, 
@@ -106,7 +106,7 @@ const CheckoutPage = () => {
       );
 
       // Clear cart after successful order
-      await axios.delete("http://localhost:5000/api/cart/clear", {
+      await axios.delete("https://backend-g-sigma.vercel.app/api/cart/clear", {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -124,7 +124,7 @@ const CheckoutPage = () => {
     try {
       const token = localStorage.getItem("token");
       await axios.put(
-        "http://localhost:5000/api/users/update",
+        "https://backend-g-sigma.vercel.app/api/users/update",
         { address },
         { headers: { Authorization: `Bearer ${token}` } }
       );

@@ -22,7 +22,7 @@ const HomePage = () => {
 
   const fetchProducts = async () => {
     try {
-      const res = await axios.get("http://localhost:5000/api/products/get");
+      const res = await axios.get("https://backend-g-sigma.vercel.app/api/products/get");
       setProducts(res.data.slice(0, 8)); // Show first 8 products
     } catch (err) {
       console.error("Failed to fetch products");
@@ -32,7 +32,7 @@ const HomePage = () => {
   const fetchRecentOrders = async () => {
     try {
       const token = localStorage.getItem("token");
-      const res = await axios.get("http://localhost:5000/api/orders/my", {
+      const res = await axios.get("https://backend-g-sigma.vercel.app/api/orders/my", {
         headers: { Authorization: `Bearer ${token}` }
       });
       setRecentOrders(res.data.slice(0, 3));
@@ -44,7 +44,7 @@ const HomePage = () => {
   const fetchCartCount = async () => {
     try {
       const token = localStorage.getItem("token");
-      const res = await axios.get("http://localhost:5000/api/cart/get", {
+      const res = await axios.get("https://backend-g-sigma.vercel.app/api/cart/get", {
         headers: { Authorization: `Bearer ${token}` }
       });
       setCartCount(res.data.length);
@@ -61,7 +61,7 @@ const HomePage = () => {
         return;
       }
       await axios.post(
-        "http://localhost:5000/api/cart/add",
+        "https://backend-g-sigma.vercel.app/api/cart/add",
         { productId, qty: 1 },
         { headers: { Authorization: `Bearer ${token}` } }
       );
