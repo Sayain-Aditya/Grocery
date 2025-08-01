@@ -25,7 +25,9 @@ const EditProduct = () => {
 
     const fetchProduct = async () => {
       try {
-        const res = await axios.get(`https://backend-g-sigma.vercel.app/api/products/get/${id}`);
+        const res = await axios.get(
+          `https://backend-g-sigma.vercel.app/api/products/get/${id}`
+        );
         setForm({
           name: res.data.name || "",
           price: res.data.price || "",
@@ -60,7 +62,8 @@ const EditProduct = () => {
       setTimeout(() => navigate("/admin"), 1200);
     } catch (err) {
       setMessage(
-        err.response?.data.message || "Failed to update product. Please try again."
+        err.response?.data.message ||
+          "Failed to update product. Please try again."
       );
     }
   };

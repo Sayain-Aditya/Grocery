@@ -17,7 +17,6 @@ import AdminOrderList from './dash/AdminOrderList';
 import UserOrderHistory from './users/UserOrderHistory';
 import InvoicePage from './users/InvoicePage';
 
-
 const App = () => {
   return (
     <BrowserRouter>
