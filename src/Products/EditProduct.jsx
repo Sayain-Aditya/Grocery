@@ -26,7 +26,7 @@ const EditProduct = () => {
     const fetchProduct = async () => {
       try {
         const res = await axios.get(
-          `http://localhost:5000/api/products/get/${id}`
+          `https://backend-g-sigma.vercel.app/api/products/get/${id}`
         );
         setForm({
           name: res.data.name || "",
@@ -50,7 +50,7 @@ const EditProduct = () => {
     try {
       const token = localStorage.getItem("token");
       await axios.put(
-        `http://localhost:5000/api/products/update/${id}`,
+        `https://backend-g-sigma.vercel.app/api/products/update/${id}`,
         form,
         {
           headers: {

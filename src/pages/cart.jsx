@@ -11,7 +11,7 @@ const Cart = () => {
   const fetchCart = async () => {
     try {
       const token = localStorage.getItem("token");
-      const res = await axios.get("http://localhost:5000/api/cart/get", {
+      const res = await axios.get("https://backend-g-sigma.vercel.app/api/cart/get", {
         headers: { Authorization: `Bearer ${token}` },
       });
       setCartItems(res.data);
@@ -31,7 +31,7 @@ const Cart = () => {
     try {
       const token = localStorage.getItem("token");
       await axios.put(
-        `http://localhost:5000/api/cart/update/${itemId}`,
+        `https://backend-g-sigma.vercel.app/api/cart/update/${itemId}`,
         { qty },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -46,7 +46,7 @@ const Cart = () => {
   const handleRemove = async (itemId) => {
     try {
       const token = localStorage.getItem("token");
-      await axios.delete(`http://localhost:5000/api/cart/remove/${itemId}`, {
+      await axios.delete(`https://backend-g-sigma.vercel.app/api/cart/remove/${itemId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       toast.success("Item removed!");
@@ -60,7 +60,7 @@ const Cart = () => {
   const handleClearCart = async () => {
     try {
       const token = localStorage.getItem("token");
-      await axios.delete("http://localhost:5000/api/cart/clear", {
+      await axios.delete("https://backend-g-sigma.vercel.app/api/cart/clear", {
         headers: { Authorization: `Bearer ${token}` },
       });
       toast.success("Cart cleared!");
@@ -143,7 +143,7 @@ const Cart = () => {
               onClick={async () => {
                 try {
                   const token = localStorage.getItem("token");
-                  await axios.delete("http://localhost:5000/api/cart/clear", {
+                  await axios.delete("https://backend-g-sigma.vercel.app/api/cart/clear", {
                     headers: { Authorization: `Bearer ${token}` },
                   });
                   toast.success("Cart cleared!");

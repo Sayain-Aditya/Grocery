@@ -53,7 +53,7 @@ const LoginPage = () => {
     setLoading(true);
 
     try {
-      const res = await axios.post("http://localhost:5000/api/users/login", {
+      const res = await axios.post("https://backend-g-sigma.vercel.app/api/users/login", {
         email: email.trim().toLowerCase(),
         password,
       }, {

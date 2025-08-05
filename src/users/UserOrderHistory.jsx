@@ -12,7 +12,7 @@ const UserOrderHistory = () => {
     const fetchOrders = async () => {
       try {
         const token = localStorage.getItem("token");
-        const res = await axios.get("http://localhost:5000/api/orders/my", {
+        const res = await axios.get("https://backend-g-sigma.vercel.app/api/orders/my", {
           headers: { Authorization: `Bearer ${token}` },
         });
         setOrders(res.data);
@@ -32,7 +32,7 @@ const UserOrderHistory = () => {
     try {
       const token = localStorage.getItem("token");
       const res = await axios.get(
-        `http://localhost:5000/api/orders/search?query=${encodeURIComponent(
+        `https://backend-g-sigma.vercel.app/api/orders/search?query=${encodeURIComponent(
           search
         )}`,
         { headers: { Authorization: `Bearer ${token}` } }

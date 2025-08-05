@@ -12,10 +12,10 @@ const AdminDashboard = () => {
     const fetchStats = async () => {
       try {
         const token = localStorage.getItem("token");
-        const statsRes = await axios.get("http://localhost:5000/api/users/stats", {
+        const statsRes = await axios.get("https://backend-g-sigma.vercel.app/api/users/stats", {
           headers: { Authorization: `Bearer ${token}` },
         });
-        const ordersRes = await axios.get("http://localhost:5000/api/orders", {
+        const ordersRes = await axios.get("https://backend-g-sigma.vercel.app/api/orders", {
           headers: { Authorization: `Bearer ${token}` },
         });
         setStats(statsRes.data);
