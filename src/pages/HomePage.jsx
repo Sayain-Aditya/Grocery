@@ -22,10 +22,10 @@ const HomePage = () => {
 
   const fetchProducts = async () => {
     try {
-      const res = await axios.get("https://backend-g-sigma.vercel.app/api/products/get");
-      setProducts(res.data.slice(0, 8)); // Show first 8 products
+      const res = await axios.get("https://backend-g-sigma.vercel.app/api/products/get?limit=8");
+      setProducts(res.data.products || []); // Handle the correct response structure
     } catch (err) {
-      console.error("Failed to fetch products");
+      console.error("Failed to fetch products:", err);
     }
   };
 
@@ -37,7 +37,7 @@ const HomePage = () => {
       });
       setRecentOrders(res.data.slice(0, 3));
     } catch (err) {
-      console.error("Failed to fetch recent orders");
+      console.error("Failed to fetch recent orders:", err);
     }
   };
 
@@ -49,7 +49,7 @@ const HomePage = () => {
       });
       setCartCount(res.data.length);
     } catch (err) {
-      console.error("Failed to fetch cart count");
+      console.error("Failed to fetch cart count:", err);
     }
   };
 
@@ -68,7 +68,7 @@ const HomePage = () => {
       fetchCartCount(); // Update cart count
       alert("Added to cart!");
     } catch (err) {
-      console.error("Failed to add to cart");
+      console.error("Failed to add to cart:", err);
     }
   };
 

@@ -55,7 +55,7 @@ const Profile = () => {
     try {
       const token = localStorage.getItem("token");
       await axios.put(
-        "https://backend-g-sigma.vercel.app/api/users/update",
+        "http://localhost:5000/api/users/update",
         { name, password, address },
         {
           headers: {

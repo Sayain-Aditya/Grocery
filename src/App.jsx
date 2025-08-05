@@ -1,5 +1,6 @@
 import React from 'react';
 import { BrowserRouter, Route, Routes, Navigate } from 'react-router-dom';
+import { isAuthenticated, isAdmin, clearAuth } from './utils/auth';
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/loginPage';
 import Dashboard from './dash/Dashboard';
@@ -10,8 +11,7 @@ import Lists from './users/ProductList';
 import Edit from './Products/EditProduct'; 
 import Cart  from './pages/cart';
 import Profile from './users/profile';
-
-import OrderPage from './pages/order'; // Import OrderPage component
+import OrderPage from './pages/order';
 import CheckoutPage from './pages/CheckoutPage';
 import AdminOrderList from './dash/AdminOrderList';
 import UserOrderHistory from './users/UserOrderHistory';
@@ -35,13 +35,13 @@ const App = () => {
         <Route path="/ProductList" element={<Lists />} />
         <Route path="/products" element={<Lists />} />
         <Route path="/EditProduct/:id" element={<Edit />} />
-        <Route path="/cart" element={<Cart />} />
-        <Route path="/profile" element={<Profile />} />
-        <Route path="/checkout" element={<CheckoutPage />} />
-        <Route path="/order" element={<OrderPage />} />
+        <Route path="/cart" element={<RequireAuth><Cart /></RequireAuth>} />
+        <Route path="/profile" element={<RequireAuth><Profile /></RequireAuth>} />
+        <Route path="/checkout" element={<RequireAuth><CheckoutPage /></RequireAuth>} />
+        <Route path="/order" element={<RequireAuth><OrderPage /></RequireAuth>} />
         <Route path="/admin/orders" element={<RequireAdmin><AdminOrderList /></RequireAdmin>} />
-        <Route path="/my-orders" element={<UserOrderHistory />} />
-        <Route path="/invoice/:id" element={<InvoicePage />} />
+        <Route path="/my-orders" element={<RequireAuth><UserOrderHistory /></RequireAuth>} />
+        <Route path="/invoice/:id" element={<RequireAuth><InvoicePage /></RequireAuth>} />
         
         {/* Redirect any unknown paths to login */}
 
@@ -52,11 +52,22 @@ const App = () => {
 }
 
 
-// HOC for admin route protection
+// Protected route components
+function RequireAuth({ children }) {
+  if (!isAuthenticated()) {
+    clearAuth();
+    return <Navigate to="/login" replace />;
+  }
+  return children;
+}
+
 function RequireAdmin({ children }) {
-  const user = JSON.parse(localStorage.getItem('user'));
-  if (!user || user.role !== 'admin') {
-    return <Navigate to="/AdminDashboard" replace />;
+  if (!isAuthenticated()) {
+    clearAuth();
+    return <Navigate to="/login" replace />;
+  }
+  if (!isAdmin()) {
+    return <Navigate to="/home" replace />;
   }
   return children;
 }
