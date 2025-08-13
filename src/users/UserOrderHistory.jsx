@@ -10,6 +10,8 @@ const UserOrderHistory = () => {
   const [error, setError] = useState("");
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("all");
+  const [selectedOrder, setSelectedOrder] = useState(null);
+  const [showTracking, setShowTracking] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -64,11 +66,29 @@ const UserOrderHistory = () => {
           text: "text-white", 
           icon: "⏳" 
         };
+      case "confirmed":
+        return { 
+          bg: "bg-gradient-to-r from-purple-400 to-purple-500", 
+          text: "text-white", 
+          icon: "✔️" 
+        };
+      case "preparing":
+        return { 
+          bg: "bg-gradient-to-r from-orange-400 to-orange-500", 
+          text: "text-white", 
+          icon: "👨‍🍳" 
+        };
       case "shipped":
         return { 
           bg: "bg-gradient-to-r from-blue-400 to-blue-500", 
           text: "text-white", 
           icon: "🚚" 
+        };
+      case "out_for_delivery":
+        return { 
+          bg: "bg-gradient-to-r from-indigo-400 to-indigo-500", 
+          text: "text-white", 
+          icon: "🏃‍♂️" 
         };
       case "delivered":
         return { 
@@ -89,6 +109,31 @@ const UserOrderHistory = () => {
           icon: "📦" 
         };
     }
+  };
+
+  const getDeliveryTimeline = (status, createdAt) => {
+    const statuses = [
+      { key: 'pending', label: 'Order Placed', icon: '📝' },
+      { key: 'confirmed', label: 'Order Confirmed', icon: '✔️' },
+      { key: 'preparing', label: 'Preparing Order', icon: '👨‍🍳' },
+      { key: 'shipped', label: 'Order Shipped', icon: '🚚' },
+      { key: 'out_for_delivery', label: 'Out for Delivery', icon: '🏃‍♂️' },
+      { key: 'delivered', label: 'Delivered', icon: '✅' }
+    ];
+
+    const currentStatusIndex = statuses.findIndex(s => s.key === status?.toLowerCase());
+    
+    return statuses.map((statusItem, index) => ({
+      ...statusItem,
+      completed: index <= currentStatusIndex,
+      active: index === currentStatusIndex,
+      time: index === 0 ? new Date(createdAt).toLocaleString('en-IN') : null
+    }));
+  };
+
+  const handleTrackOrder = (order) => {
+    setSelectedOrder(order);
+    setShowTracking(true);
   };
 
   const handleShowInvoice = (order) => {
@@ -145,7 +190,7 @@ const UserOrderHistory = () => {
 
           {/* Filter Tabs */}
           <div className="flex flex-wrap gap-2 justify-center">
-            {["all", "pending", "shipped", "delivered", "cancelled"].map((status) => {
+            {["all", "pending", "confirmed", "preparing", "shipped", "out_for_delivery", "delivered", "cancelled"].map((status) => {
               const count = getFilterCount(status);
               const isActive = filter === status;
               return (
@@ -256,17 +301,24 @@ const UserOrderHistory = () => {
                     </div>
 
                     {/* Action Buttons */}
-                    <div className="flex gap-3">
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => handleTrackOrder(order)}
+                        className="flex-1 bg-gradient-to-r from-green-500 to-green-600 text-white px-3 py-2 rounded-lg font-semibold hover:from-green-600 hover:to-green-700 transition-all duration-200 flex items-center justify-center space-x-1 text-sm"
+                      >
+                        <span>📍</span>
+                        <span>Track</span>
+                      </button>
                       <button
                         onClick={() => handleShowInvoice(order)}
-                        className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 text-white px-4 py-3 rounded-xl font-semibold hover:from-blue-700 hover:to-purple-700 transform hover:scale-105 transition-all duration-200 shadow-lg flex items-center justify-center space-x-2"
+                        className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 text-white px-3 py-2 rounded-lg font-semibold hover:from-blue-700 hover:to-purple-700 transition-all duration-200 flex items-center justify-center space-x-1 text-sm"
                       >
                         <span>📎</span>
-                        <span>View Invoice</span>
+                        <span>Invoice</span>
                       </button>
                       <button
                         onClick={() => navigate('/products')}
-                        className="bg-gray-100 text-gray-700 px-4 py-3 rounded-xl font-semibold hover:bg-gray-200 transition-colors flex items-center justify-center"
+                        className="bg-gray-100 text-gray-700 px-3 py-2 rounded-lg font-semibold hover:bg-gray-200 transition-colors flex items-center justify-center"
                       >
                         <span>🔁</span>
                       </button>
@@ -278,6 +330,69 @@ const UserOrderHistory = () => {
           </div>
         )}
       </div>
+
+      {/* Tracking Modal */}
+      {showTracking && selectedOrder && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-2xl font-bold text-gray-800">Order Tracking</h3>
+                <button
+                  onClick={() => setShowTracking(false)}
+                  className="text-gray-500 hover:text-gray-700 text-2xl"
+                >
+                  ×
+                </button>
+              </div>
+              
+              <div className="mb-4">
+                <p className="text-sm text-gray-600">Order #{selectedOrder._id.slice(-8)}</p>
+                <p className="text-lg font-semibold text-gray-800">₹{selectedOrder.total.toFixed(2)}</p>
+              </div>
+
+              {/* Timeline */}
+              <div className="space-y-4">
+                {getDeliveryTimeline(selectedOrder.status, selectedOrder.createdAt).map((step, index) => (
+                  <div key={step.key} className="flex items-start space-x-3">
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm ${
+                      step.completed 
+                        ? 'bg-gradient-to-r from-green-500 to-green-600 text-white' 
+                        : step.active 
+                        ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white animate-pulse'
+                        : 'bg-gray-200 text-gray-500'
+                    }`}>
+                      {step.completed || step.active ? step.icon : '○'}
+                    </div>
+                    <div className="flex-1">
+                      <p className={`font-semibold ${
+                        step.completed || step.active ? 'text-gray-800' : 'text-gray-500'
+                      }`}>
+                        {step.label}
+                      </p>
+                      {step.time && (
+                        <p className="text-xs text-gray-500">{step.time}</p>
+                      )}
+                      {step.active && (
+                        <p className="text-xs text-blue-600 font-semibold">Current Status</p>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="mt-6 pt-4 border-t">
+                <button
+                  onClick={() => setShowTracking(false)}
+                  className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 rounded-xl font-semibold hover:from-blue-700 hover:to-purple-700 transition-all duration-200"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

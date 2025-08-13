@@ -1,6 +1,7 @@
 import React from "react";
 import axios from "axios";
 import { Link, useNavigate } from "react-router-dom";
+import { isTokenValid } from '../utils/auth';
 
 const LoginPage = () => {
   const [email, setEmail] = React.useState("");
@@ -14,7 +15,7 @@ const LoginPage = () => {
   React.useEffect(() => {
     const token = localStorage.getItem('token');
     const user = localStorage.getItem('user');
-    if (token && user) {
+    if (token && user && isTokenValid(token)) {
       const userData = JSON.parse(user);
       if (userData.role === 'admin') {
         navigate('/admin');

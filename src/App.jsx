@@ -1,6 +1,7 @@
-import React from 'react';
-import { BrowserRouter, Route, Routes, Navigate } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { BrowserRouter, Route, Routes, Navigate, useNavigate } from 'react-router-dom';
 import { isAuthenticated, isAdmin, clearAuth } from './utils/auth';
+import { setupAxiosInterceptors, checkTokenOnLoad } from './utils/tokenManager';
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/loginPage';
 import Dashboard from './dash/Dashboard';
@@ -17,10 +18,18 @@ import AdminOrderList from './dash/AdminOrderList';
 import UserOrderHistory from './users/UserOrderHistory';
 import InvoicePage from './users/InvoicePage';
 
-const App = () => {
+const AppContent = () => {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    // Setup axios interceptors for token management
+    setupAxiosInterceptors(navigate);
+    // Check token validity on app load
+    checkTokenOnLoad(navigate);
+  }, [navigate]);
+
   return (
-    <BrowserRouter>
-      <Routes>
+    <Routes>
         <Route path="/register" element={<Register />} />
         {/* Home page as root */}
         <Route path="/" element={<HomePage />} />
@@ -46,10 +55,17 @@ const App = () => {
         {/* Redirect any unknown paths to login */}
 
 
-      </Routes>
+    </Routes>
+  );
+};
+
+const App = () => {
+  return (
+    <BrowserRouter>
+      <AppContent />
     </BrowserRouter>
   );
-}
+};
 
 
 // Protected route components

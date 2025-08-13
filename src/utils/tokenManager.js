@@ -1,13 +1,19 @@
 import axios from 'axios';
 import { clearAuth, isTokenValid } from './auth';
 
+let isInterceptorSetup = false;
+
 // Create axios interceptor to handle token expiration
 const setupAxiosInterceptors = (navigate) => {
+  // Prevent multiple interceptor setups
+  if (isInterceptorSetup) return;
+  isInterceptorSetup = true;
+
   // Request interceptor to add token to headers
   axios.interceptors.request.use(
     (config) => {
       const token = localStorage.getItem('token');
-      if (token && isTokenValid(token)) {
+      if (token) {
         config.headers.Authorization = `Bearer ${token}`;
       }
       return config;
@@ -19,10 +25,13 @@ const setupAxiosInterceptors = (navigate) => {
   axios.interceptors.response.use(
     (response) => response,
     (error) => {
-      if (error.response?.status === 401) {
-        // Token expired or invalid
+      if (error.response?.status === 401 || error.response?.status === 403) {
+        // Token expired or invalid - clear auth and redirect
+        console.warn('Authentication failed:', error.response?.data?.message || 'Unauthorized');
         clearAuth();
-        navigate('/login');
+        if (navigate) {
+          navigate('/login');
+        }
         return Promise.reject(new Error('Session expired. Please login again.'));
       }
       return Promise.reject(error);
@@ -32,18 +41,40 @@ const setupAxiosInterceptors = (navigate) => {
 
 // Check token validity on app load
 const checkTokenOnLoad = (navigate) => {
-  const token = localStorage.getItem('token');
-  const user = localStorage.getItem('user');
-  
-  if (token && user) {
-    if (!isTokenValid(token)) {
+  try {
+    const token = localStorage.getItem('token');
+    const user = localStorage.getItem('user');
+    
+    if (!token || !user) {
       clearAuth();
-      navigate('/login');
       return false;
     }
+    
+    if (!isTokenValid(token)) {
+      console.warn('Token expired on app load');
+      clearAuth();
+      if (navigate) {
+        navigate('/login');
+      }
+      return false;
+    }
+    
     return true;
+  } catch (error) {
+    console.error('Error checking token on load:', error);
+    clearAuth();
+    if (navigate) {
+      navigate('/login');
+    }
+    return false;
   }
-  return false;
 };
 
-export { setupAxiosInterceptors, checkTokenOnLoad };
+// Reset interceptor setup flag (useful for testing or re-initialization)
+const resetInterceptors = () => {
+  isInterceptorSetup = false;
+  axios.interceptors.request.clear();
+  axios.interceptors.response.clear();
+};
+
+export { setupAxiosInterceptors, checkTokenOnLoad, resetInterceptors };

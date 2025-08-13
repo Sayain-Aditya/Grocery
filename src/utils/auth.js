@@ -1,12 +1,19 @@
 // Authentication utility functions
 export const isTokenValid = (token) => {
-  if (!token) return false;
+  if (!token || typeof token !== 'string') return false;
   
   try {
-    const payload = JSON.parse(atob(token.split('.')[1]));
+    const parts = token.split('.');
+    if (parts.length !== 3) return false;
+    
+    const payload = JSON.parse(atob(parts[1]));
+    if (!payload.exp) return false; // If no expiration, consider invalid for security
+    
     const currentTime = Date.now() / 1000;
-    return payload.exp > currentTime;
+    // Add 10 second buffer to prevent edge cases
+    return payload.exp > (currentTime + 10);
   } catch (error) {
+    console.warn('Token validation error:', error);
     return false;
   }
 };
@@ -17,7 +24,11 @@ export const getStoredUser = () => {
     const user = localStorage.getItem('user');
     const token = localStorage.getItem('token');
     
-    if (!user || !token) return null;
+    if (!user || !token) {
+      clearAuth();
+      return null;
+    }
+    
     if (!isTokenValid(token)) {
       clearAuth();
       return null;
@@ -25,6 +36,7 @@ export const getStoredUser = () => {
     
     return JSON.parse(user);
   } catch (error) {
+    console.error('Error getting stored user:', error);
     clearAuth();
     return null;
   }
@@ -36,12 +48,34 @@ export const clearAuth = () => {
 };
 
 export const isAuthenticated = () => {
-  const token = localStorage.getItem('token');
-  const user = localStorage.getItem('user');
-  return token && user && isTokenValid(token);
+  try {
+    const token = localStorage.getItem('token');
+    const user = localStorage.getItem('user');
+    
+    if (!token || !user) {
+      clearAuth();
+      return false;
+    }
+    
+    if (!isTokenValid(token)) {
+      clearAuth();
+      return false;
+    }
+    
+    return true;
+  } catch (error) {
+    console.error('Authentication check error:', error);
+    clearAuth();
+    return false;
+  }
 };
 
 export const isAdmin = () => {
-  const user = getStoredUser();
-  return user && user.role === 'admin';
+  try {
+    const user = getStoredUser();
+    return user && user.role === 'admin';
+  } catch (error) {
+    console.error('Admin check error:', error);
+    return false;
+  }
 };
