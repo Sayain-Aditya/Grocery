@@ -12,9 +12,14 @@ const setupAxiosInterceptors = (navigate) => {
   // Request interceptor to add token to headers
   axios.interceptors.request.use(
     (config) => {
-      const token = localStorage.getItem('token');
-      if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
+      // Skip adding token for login and register endpoints
+      const isAuthEndpoint = config.url?.includes('/login') || config.url?.includes('/register');
+      
+      if (!isAuthEndpoint) {
+        const token = localStorage.getItem('token');
+        if (token) {
+          config.headers.Authorization = `Bearer ${token}`;
+        }
       }
       return config;
     },
