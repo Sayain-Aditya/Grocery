@@ -3,6 +3,7 @@ import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import { setupAxiosInterceptors } from '../utils/tokenManager';
 import { isAuthenticated } from '../utils/auth';
+import DeliveryTracker from '../components/DeliveryTracker';
 
 const UserOrderHistory = () => {
   const [orders, setOrders] = useState([]);
@@ -12,6 +13,8 @@ const UserOrderHistory = () => {
   const [filter, setFilter] = useState("all");
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [showTracking, setShowTracking] = useState(false);
+  const [showMapTracking, setShowMapTracking] = useState(false);
+  const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -302,13 +305,26 @@ const UserOrderHistory = () => {
 
                     {/* Action Buttons */}
                     <div className="flex gap-2">
-                      <button
-                        onClick={() => handleTrackOrder(order)}
-                        className="flex-1 bg-gradient-to-r from-green-500 to-green-600 text-white px-3 py-2 rounded-lg font-semibold hover:from-green-600 hover:to-green-700 transition-all duration-200 flex items-center justify-center space-x-1 text-sm"
-                      >
-                        <span>📍</span>
-                        <span>Track</span>
-                      </button>
+                      {order.status === 'out_for_delivery' ? (
+                        <button
+                          onClick={() => {
+                            setSelectedOrder(order);
+                            setShowMapTracking(true);
+                          }}
+                          className="flex-1 bg-gradient-to-r from-red-500 to-pink-500 text-white px-3 py-2 rounded-lg font-semibold hover:from-red-600 hover:to-pink-600 transition-all duration-200 flex items-center justify-center space-x-1 text-sm animate-pulse"
+                        >
+                          <span>🚚</span>
+                          <span>Live Track</span>
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => handleTrackOrder(order)}
+                          className="flex-1 bg-gradient-to-r from-green-500 to-green-600 text-white px-3 py-2 rounded-lg font-semibold hover:from-green-600 hover:to-green-700 transition-all duration-200 flex items-center justify-center space-x-1 text-sm"
+                        >
+                          <span>📍</span>
+                          <span>Track</span>
+                        </button>
+                      )}
                       <button
                         onClick={() => handleShowInvoice(order)}
                         className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 text-white px-3 py-2 rounded-lg font-semibold hover:from-blue-700 hover:to-purple-700 transition-all duration-200 flex items-center justify-center space-x-1 text-sm"
@@ -387,6 +403,42 @@ const UserOrderHistory = () => {
                   className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 rounded-xl font-semibold hover:from-blue-700 hover:to-purple-700 transition-all duration-200"
                 >
                   Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Google Maps Live Tracking Modal */}
+      {showMapTracking && selectedOrder && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
+            <div className="p-4">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-2xl font-bold text-gray-800 flex items-center space-x-2">
+                  <span>🚚</span>
+                  <span>Live Delivery Tracking</span>
+                </h3>
+                <button
+                  onClick={() => setShowMapTracking(false)}
+                  className="text-gray-500 hover:text-gray-700 text-2xl bg-gray-100 hover:bg-gray-200 rounded-full w-8 h-8 flex items-center justify-center"
+                >
+                  ×
+                </button>
+              </div>
+              
+              <DeliveryTracker 
+                order={selectedOrder} 
+                apiKey={GOOGLE_MAPS_API_KEY}
+              />
+              
+              <div className="mt-4">
+                <button
+                  onClick={() => setShowMapTracking(false)}
+                  className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 rounded-xl font-semibold hover:from-blue-700 hover:to-purple-700 transition-all duration-200"
+                >
+                  Close Live Tracking
                 </button>
               </div>
             </div>

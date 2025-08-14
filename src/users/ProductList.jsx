@@ -3,6 +3,7 @@ import axios from "axios";
 import { Link, useNavigate } from "react-router-dom";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import VoiceOrdering from '../components/VoiceOrdering';
 
 const ProductList = () => {
   const [products, setProducts] = React.useState([]);
@@ -19,6 +20,7 @@ const ProductList = () => {
   const [currentPage, setCurrentPage] = React.useState(1);
   const [totalPages, setTotalPages] = React.useState(1);
   const [totalProducts, setTotalProducts] = React.useState(0);
+  const [showVoiceOrdering, setShowVoiceOrdering] = React.useState(false);
 
   const navigate = useNavigate();
 
@@ -441,8 +443,15 @@ const ProductList = () => {
             </div>
           )}
 
-          {/* Floating Cart Button */}
-          <div className="fixed bottom-6 right-6 z-50">
+          {/* Floating Action Buttons */}
+          <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-4">
+            <button
+              onClick={() => setShowVoiceOrdering(true)}
+              className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-4 rounded-full shadow-2xl hover:from-purple-700 hover:to-pink-700 transform hover:scale-110 transition-all duration-300 flex items-center space-x-2"
+            >
+              <span className="text-2xl">🎤</span>
+              <span className="font-semibold">Voice Order</span>
+            </button>
             <Link
               to="/cart"
               className="group relative bg-gradient-to-r from-green-500 to-green-600 text-white px-6 py-4 rounded-full shadow-2xl hover:from-green-600 hover:to-green-700 transform hover:scale-110 transition-all duration-300 flex items-center space-x-2"
@@ -457,6 +466,17 @@ const ProductList = () => {
             </Link>
           </div>
         </div>
+
+        {/* Voice Ordering Modal */}
+        {showVoiceOrdering && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <VoiceOrdering 
+              products={products}
+              onAddToCart={handleAddToCart}
+              onClose={() => setShowVoiceOrdering(false)}
+            />
+          </div>
+        )}
       </div>
     </>
   );
