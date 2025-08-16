@@ -19,8 +19,8 @@ const AdminDashboard = () => {
 
   const fetchStats = async () => {
     try {
-      const statsRes = await axios.get("https://backend-g-sigma.vercel.app/api/users/stats");
-      const ordersRes = await axios.get("https://backend-g-sigma.vercel.app/api/orders");
+      const statsRes = await axios.get("https://backend-g-gold.vercel.app/api/users/stats");
+      const ordersRes = await axios.get("https://backend-g-gold.vercel.app/api/orders");
       setStats(statsRes.data);
       setOrders(ordersRes.data.slice(0, 5));
     } catch (error) {

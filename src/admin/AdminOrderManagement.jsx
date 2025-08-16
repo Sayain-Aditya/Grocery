@@ -17,7 +17,7 @@ const AdminOrderManagement = () => {
 
   const fetchOrders = async () => {
     try {
-      const res = await axios.get("https://backend-g-sigma.vercel.app/api/orders/all");
+      const res = await axios.get("https://backend-g-gold.vercel.app/api/orders/all");
       setOrders(res.data);
     } catch (err) {
       toast.error("Failed to fetch orders");
@@ -28,7 +28,7 @@ const AdminOrderManagement = () => {
 
   const updateOrderStatus = async (orderId, newStatus) => {
     try {
-      await axios.put(`https://backend-g-sigma.vercel.app/api/orders/${orderId}/status`, {
+      await axios.put(`https://backend-g-gold.vercel.app/api/orders/${orderId}/status`, {
         status: newStatus
       });
       toast.success("Order status updated!");

@@ -41,7 +41,7 @@ const CheckoutPage = () => {
   const fetchCart = async () => {
     try {
       setCartLoading(true);
-      const res = await axios.get("https://backend-g-sigma.vercel.app/api/cart/get");
+      const res = await axios.get("https://backend-g-gold.vercel.app/api/cart/get");
       
       setCartItems(res.data || []);
       
@@ -79,7 +79,7 @@ const CheckoutPage = () => {
       }));
 
       await axios.post(
-        "https://backend-g-sigma.vercel.app/api/orders",
+        "https://backend-g-gold.vercel.app/api/orders",
         { 
           items, 
           total, 
@@ -89,7 +89,7 @@ const CheckoutPage = () => {
       );
 
       // Clear cart after successful order
-      await axios.delete("https://backend-g-sigma.vercel.app/api/cart/clear");
+      await axios.delete("https://backend-g-gold.vercel.app/api/cart/clear");
 
       toast.success("Order placed successfully!");
       setTimeout(() => navigate("/my-orders"), 2000);
@@ -104,7 +104,7 @@ const CheckoutPage = () => {
   const updateAddress = async () => {
     try {
       await axios.put(
-        "https://backend-g-sigma.vercel.app/api/users/update",
+        "https://backend-g-gold.vercel.app/api/users/update",
         { address }
       );
       

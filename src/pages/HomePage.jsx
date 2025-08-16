@@ -42,7 +42,7 @@ const HomePage = () => {
 
   const fetchProducts = async () => {
     try {
-      const res = await axios.get("https://backend-g-sigma.vercel.app/api/products/get?limit=8");
+      const res = await axios.get("https://backend-g-gold.vercel.app/api/products/get?limit=8");
       setProducts(res.data.products || []); // Handle the correct response structure
     } catch (err) {
       console.error("Failed to fetch products:", err);
@@ -53,7 +53,7 @@ const HomePage = () => {
     if (!isAuthenticated()) return;
     
     try {
-      const res = await axios.get("https://backend-g-sigma.vercel.app/api/orders/my");
+      const res = await axios.get("https://backend-g-gold.vercel.app/api/orders/my");
       setRecentOrders(res.data.slice(0, 3));
     } catch (err) {
       if (err.message === 'Session expired. Please login again.') {
@@ -68,7 +68,7 @@ const HomePage = () => {
     if (!isAuthenticated()) return;
     
     try {
-      const res = await axios.get("https://backend-g-sigma.vercel.app/api/cart/get");
+      const res = await axios.get("https://backend-g-gold.vercel.app/api/cart/get");
       setCartCount(res.data.length);
     } catch (err) {
       if (err.message === 'Session expired. Please login again.') {
@@ -87,7 +87,7 @@ const HomePage = () => {
     
     try {
       await axios.post(
-        "https://backend-g-sigma.vercel.app/api/cart/add",
+        "https://backend-g-gold.vercel.app/api/cart/add",
         { productId, qty: 1 }
       );
       fetchCartCount(); // Update cart count

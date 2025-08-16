@@ -28,7 +28,7 @@ const ProductList = () => {
     const fetchCartCount = async () => {
       try {
         const token = localStorage.getItem("token");
-        const res = await axios.get("https://backend-g-sigma.vercel.app/api/cart/get", {
+        const res = await axios.get("https://backend-g-gold.vercel.app/api/cart/get", {
           headers: { Authorization: `Bearer ${token}` },
         });
         setCartCount(
@@ -54,7 +54,7 @@ const ProductList = () => {
       let res;
       if (search) {
         res = await axios.get(
-          `https://backend-g-sigma.vercel.app/api/products/search?query=${encodeURIComponent(
+          `https://backend-g-gold.vercel.app/api/products/search?query=${encodeURIComponent(
             search
           )}`
         );
@@ -67,7 +67,7 @@ const ProductList = () => {
           limit: 8,
           ...(category && category !== "All" && { category }),
         });
-        res = await axios.get(`https://backend-g-sigma.vercel.app/api/products/get?${params}`);
+        res = await axios.get(`https://backend-g-gold.vercel.app/api/products/get?${params}`);
         setProducts(res.data.products);
         setTotalPages(res.data.totalPages);
         setTotalProducts(res.data.totalProducts);
@@ -82,7 +82,7 @@ const ProductList = () => {
   const handleDelete = async (id) => {
     try {
       const token = localStorage.getItem("token");
-      await axios.delete(`https://backend-g-sigma.vercel.app/api/products/delete/${id}`, {
+      await axios.delete(`https://backend-g-gold.vercel.app/api/products/delete/${id}`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -107,7 +107,7 @@ const ProductList = () => {
 
     try {
       await axios.post(
-        "https://backend-g-sigma.vercel.app/api/cart/add",
+        "https://backend-g-gold.vercel.app/api/cart/add",
         { productId, qty },
         { headers: { Authorization: `Bearer ${token}` } }
       );

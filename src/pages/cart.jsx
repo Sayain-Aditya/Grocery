@@ -17,7 +17,7 @@ const Cart = () => {
 
   const fetchCart = async () => {
     try {
-      const res = await axios.get("https://backend-g-sigma.vercel.app/api/cart/get");
+      const res = await axios.get("https://backend-g-gold.vercel.app/api/cart/get");
       setCartItems(res.data);
     } catch (err) {
       toast.error("Failed to load cart");
@@ -30,7 +30,7 @@ const Cart = () => {
   const handleQtyChange = async (itemId, qty) => {
     try {
       await axios.put(
-        `https://backend-g-sigma.vercel.app/api/cart/update/${itemId}`,
+        `https://backend-g-gold.vercel.app/api/cart/update/${itemId}`,
         { qty }
       );
       toast.success("Cart updated!");
@@ -43,7 +43,7 @@ const Cart = () => {
 
   const handleRemove = async (itemId) => {
     try {
-      await axios.delete(`https://backend-g-sigma.vercel.app/api/cart/remove/${itemId}`);
+      await axios.delete(`https://backend-g-gold.vercel.app/api/cart/remove/${itemId}`);
       toast.success("Item removed!");
       fetchCart();
     } catch (err) {
@@ -54,7 +54,7 @@ const Cart = () => {
 
   const handleClearCart = async () => {
     try {
-      await axios.delete("https://backend-g-sigma.vercel.app/api/cart/clear");
+      await axios.delete("https://backend-g-gold.vercel.app/api/cart/clear");
       toast.success("Cart cleared!");
       fetchCart();
     } catch (err) {

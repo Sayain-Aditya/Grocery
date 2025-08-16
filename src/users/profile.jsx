@@ -52,7 +52,7 @@ const Profile = () => {
     e.preventDefault();
     try {
       await axios.put(
-        "https://backend-g-sigma.vercel.app/api/users/update",
+        "https://backend-g-gold.vercel.app/api/users/update",
         { name, password, address }
       );
       

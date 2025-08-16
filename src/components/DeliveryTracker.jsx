@@ -29,7 +29,7 @@ const DeliveryTracker = ({ order, apiKey }) => {
   // Initialize Socket.io connection
   useEffect(() => {
     if (order && order.status === 'out_for_delivery') {
-      const newSocket = io('https://backend-g-sigma.vercel.app', {
+      const newSocket = io('https://backend-g-gold.vercel.app', {
         transports: ['websocket', 'polling']
       });
       

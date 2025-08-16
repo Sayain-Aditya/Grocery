@@ -30,7 +30,7 @@ const UserOrderHistory = () => {
 
   const fetchOrders = async () => {
     try {
-      const res = await axios.get("https://backend-g-sigma.vercel.app/api/orders/my");
+      const res = await axios.get("https://backend-g-gold.vercel.app/api/orders/my");
       setOrders(res.data);
       setError("");
     } catch (err) {
@@ -50,7 +50,7 @@ const UserOrderHistory = () => {
     setLoading(true);
     try {
       const res = await axios.get(
-        `https://backend-g-sigma.vercel.app/api/orders/search?query=${encodeURIComponent(search)}`
+        `https://backend-g-gold.vercel.app/api/orders/search?query=${encodeURIComponent(search)}`
       );
       setOrders(res.data.results);
       setError("");

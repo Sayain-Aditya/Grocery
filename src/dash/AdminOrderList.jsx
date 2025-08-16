@@ -19,7 +19,7 @@ const AdminOrderList = () => {
 
   const fetchOrders = async () => {
     try {
-      const res = await axios.get("https://backend-g-sigma.vercel.app/api/orders");
+      const res = await axios.get("https://backend-g-gold.vercel.app/api/orders");
       setOrders(res.data);
       setError("");
     } catch (err) {
@@ -32,7 +32,7 @@ const AdminOrderList = () => {
   const handleStatusChange = async (orderId, status) => {
     try {
       await axios.put(
-        `https://backend-g-sigma.vercel.app/api/orders/update/${orderId}/status`,
+        `https://backend-g-gold.vercel.app/api/orders/update/${orderId}/status`,
         { status }
       );
       setOrders(
@@ -56,7 +56,7 @@ const AdminOrderList = () => {
     setLoading(true);
     try {
       const res = await axios.get(
-        `https://backend-g-sigma.vercel.app/api/orders/search?query=${encodeURIComponent(search)}`
+        `https://backend-g-gold.vercel.app/api/orders/search?query=${encodeURIComponent(search)}`
       );
       setOrders(res.data.results);
       setError("");
