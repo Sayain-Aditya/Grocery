@@ -30,14 +30,19 @@ const setupAxiosInterceptors = (navigate) => {
   axios.interceptors.response.use(
     (response) => response,
     (error) => {
-      if (error.response?.status === 401 || error.response?.status === 403) {
-        // Token expired or invalid - clear auth and redirect
-        console.warn('Authentication failed:', error.response?.data?.message || 'Unauthorized');
-        clearAuth();
-        if (navigate) {
-          navigate('/login');
+      // Only handle auth errors for protected routes, not login/register
+      const isAuthEndpoint = error.config?.url?.includes('/login') || error.config?.url?.includes('/register');
+      
+      if (!isAuthEndpoint && (error.response?.status === 401 || error.response?.status === 403)) {
+        // Only redirect if we're not already on login page
+        const currentPath = window.location.pathname;
+        if (currentPath !== '/login' && currentPath !== '/register') {
+          console.warn('Authentication failed:', error.response?.data?.message || 'Unauthorized');
+          clearAuth();
+          if (navigate) {
+            navigate('/login');
+          }
         }
-        return Promise.reject(new Error('Session expired. Please login again.'));
       }
       return Promise.reject(error);
     }
@@ -58,7 +63,9 @@ const checkTokenOnLoad = (navigate) => {
     if (!isTokenValid(token)) {
       console.warn('Token expired on app load');
       clearAuth();
-      if (navigate) {
+      // Only redirect if not already on auth pages
+      const currentPath = window.location.pathname;
+      if (navigate && currentPath !== '/login' && currentPath !== '/register') {
         navigate('/login');
       }
       return false;
@@ -68,9 +75,6 @@ const checkTokenOnLoad = (navigate) => {
   } catch (error) {
     console.error('Error checking token on load:', error);
     clearAuth();
-    if (navigate) {
-      navigate('/login');
-    }
     return false;
   }
 };

@@ -10,8 +10,8 @@ export const isTokenValid = (token) => {
     if (!payload.exp) return false; // If no expiration, consider invalid for security
     
     const currentTime = Date.now() / 1000;
-    // Add 10 second buffer to prevent edge cases
-    return payload.exp > (currentTime + 10);
+    // Add 30 second buffer to prevent edge cases with server time differences
+    return payload.exp > (currentTime + 30);
   } catch (error) {
     console.warn('Token validation error:', error);
     return false;
