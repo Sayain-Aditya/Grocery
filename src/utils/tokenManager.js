@@ -34,12 +34,14 @@ const setupAxiosInterceptors = (navigate) => {
       const isAuthEndpoint = error.config?.url?.includes('/login') || error.config?.url?.includes('/register');
       const currentPath = window.location.pathname;
       
-      // Only redirect on specific token errors
+      // Only redirect on 401 with specific error messages
       if (!isAuthEndpoint && error.response?.status === 401 && 
           currentPath !== '/login' && currentPath !== '/register') {
         
         const errorMessage = error.response?.data?.message || '';
-        if (errorMessage.includes('expired') || errorMessage.includes('Invalid token')) {
+        // Be more specific about when to redirect
+        if (errorMessage.includes('expired') || errorMessage.includes('No token provided') || 
+            errorMessage.includes('User not found')) {
           console.warn('Authentication error:', errorMessage);
           clearAuth();
           if (navigate && window.location.pathname !== '/login') {
@@ -58,18 +60,8 @@ const checkTokenOnLoad = (navigate) => {
     const token = localStorage.getItem('token');
     const user = localStorage.getItem('user');
     
-    if (!token || !user) {
-      return false;
-    }
-    
-    // Be more lenient on app load - only clear if token is severely expired
-    if (!isTokenValid(token)) {
-      console.warn('Token validation failed on app load');
-      // Don't immediately clear auth, let the server decide
-      return false;
-    }
-    
-    return true;
+    // Just check if token and user exist, let server validate
+    return !!(token && user);
   } catch (error) {
     console.error('Error checking token on load:', error);
     return false;

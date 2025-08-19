@@ -8,6 +8,8 @@ import { isAuthenticated } from '../utils/auth';
 const Cart = () => {
   const [cartItems, setCartItems] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [recipeSuggestions, setRecipeSuggestions] = useState([]);
+  const [showRecipes, setShowRecipes] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -19,11 +21,23 @@ const Cart = () => {
     try {
       const res = await axios.get("https://backend-g-gold.vercel.app/api/cart/get");
       setCartItems(res.data);
+      if (res.data.length > 0) {
+        fetchRecipeSuggestions();
+      }
     } catch (err) {
       toast.error("Failed to load cart");
       console.error(err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchRecipeSuggestions = async () => {
+    try {
+      const res = await axios.get("https://backend-g-gold.vercel.app/api/cart/recipes");
+      setRecipeSuggestions(res.data.suggestions || []);
+    } catch (err) {
+      console.error("Failed to load recipe suggestions:", err);
     }
   };
 
@@ -217,7 +231,69 @@ const Cart = () => {
                     <span>🗑️</span>
                     <span>Clear Cart</span>
                   </button>
+                  
+                  {recipeSuggestions.length > 0 && (
+                    <button
+                      onClick={() => setShowRecipes(!showRecipes)}
+                      className="w-full bg-orange-100 text-orange-600 px-6 py-3 rounded-xl font-semibold hover:bg-orange-500 hover:text-white transition-all duration-200 flex items-center justify-center space-x-2"
+                    >
+                      <span>👨🍳</span>
+                      <span>{showRecipes ? 'Hide' : 'Show'} Recipe Ideas</span>
+                    </button>
+                  )}
                 </div>
+              </div>
+            </div>
+          </div>
+        )}
+        
+        {/* Recipe Suggestions */}
+        {showRecipes && recipeSuggestions.length > 0 && (
+          <div className="mt-8">
+            <div className="bg-white rounded-2xl shadow-xl p-6">
+              <h3 className="text-2xl font-bold text-gray-800 mb-6 flex items-center">
+                <span className="mr-2">👨🍳</span> Recipe Suggestions
+                <span className="ml-2 bg-orange-100 text-orange-600 px-3 py-1 rounded-full text-sm font-semibold">
+                  {recipeSuggestions.length} recipes
+                </span>
+              </h3>
+              <p className="text-gray-600 mb-6">Based on items in your cart, here are some delicious recipes you can make:</p>
+              
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {recipeSuggestions.map((recipe) => (
+                  <div key={recipe.id} className="bg-gradient-to-br from-orange-50 to-yellow-50 rounded-xl p-5 border border-orange-200 hover:shadow-lg transition-all duration-300">
+                    <div className="flex items-center justify-between mb-3">
+                      <h4 className="text-lg font-bold text-gray-800">{recipe.name}</h4>
+                      <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                        recipe.difficulty === 'Easy' ? 'bg-green-100 text-green-600' :
+                        recipe.difficulty === 'Medium' ? 'bg-yellow-100 text-yellow-600' :
+                        'bg-red-100 text-red-600'
+                      }`}>
+                        {recipe.difficulty}
+                      </span>
+                    </div>
+                    
+                    <div className="mb-3">
+                      <p className="text-sm text-gray-600 mb-2">⏱️ Cook time: {recipe.cookTime}</p>
+                      <div className="flex flex-wrap gap-1 mb-3">
+                        {recipe.matchingIngredients.map((ingredient, idx) => (
+                          <span key={idx} className="bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs font-medium">
+                            ✓ {ingredient}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                    
+                    <div className="text-sm text-gray-700 mb-4">
+                      <strong>Instructions:</strong>
+                      <p className="mt-1">{recipe.instructions}</p>
+                    </div>
+                    
+                    <div className="text-xs text-gray-500">
+                      <strong>All ingredients:</strong> {recipe.ingredients.join(', ')}
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           </div>

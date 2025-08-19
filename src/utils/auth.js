@@ -10,11 +10,12 @@ export const isTokenValid = (token) => {
     if (!payload.exp) return true; // If no expiration, consider valid
     
     const currentTime = Date.now() / 1000;
-    // Allow 5 minutes buffer for Vercel deployment time differences
-    return payload.exp > (currentTime - 300);
+    // More lenient - allow 10 minutes buffer and don't be too strict
+    return payload.exp > (currentTime - 600);
   } catch (error) {
     console.warn('Token validation error:', error);
-    return false;
+    // Don't fail validation on parsing errors, let server decide
+    return true;
   }
 };
 
@@ -25,19 +26,12 @@ export const getStoredUser = () => {
     const token = localStorage.getItem('token');
     
     if (!user || !token) {
-      clearAuth();
-      return null;
-    }
-    
-    if (!isTokenValid(token)) {
-      clearAuth();
       return null;
     }
     
     return JSON.parse(user);
   } catch (error) {
     console.error('Error getting stored user:', error);
-    clearAuth();
     return null;
   }
 };
@@ -52,20 +46,9 @@ export const isAuthenticated = () => {
     const token = localStorage.getItem('token');
     const user = localStorage.getItem('user');
     
-    if (!token || !user) {
-      clearAuth();
-      return false;
-    }
-    
-    if (!isTokenValid(token)) {
-      clearAuth();
-      return false;
-    }
-    
-    return true;
+    return !!(token && user);
   } catch (error) {
     console.error('Authentication check error:', error);
-    clearAuth();
     return false;
   }
 };
