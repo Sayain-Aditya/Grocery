@@ -7,11 +7,11 @@ export const isTokenValid = (token) => {
     if (parts.length !== 3) return false;
     
     const payload = JSON.parse(atob(parts[1]));
-    if (!payload.exp) return false; // If no expiration, consider invalid for security
+    if (!payload.exp) return true; // If no expiration, consider valid
     
     const currentTime = Date.now() / 1000;
-    // Add 60 second buffer to handle server time differences on Vercel
-    return payload.exp > (currentTime - 60);
+    // Allow 5 minutes buffer for Vercel deployment time differences
+    return payload.exp > (currentTime - 300);
   } catch (error) {
     console.warn('Token validation error:', error);
     return false;

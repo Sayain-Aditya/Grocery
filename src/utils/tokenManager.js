@@ -32,17 +32,20 @@ const setupAxiosInterceptors = (navigate) => {
     (error) => {
       // Only handle auth errors for protected routes, not login/register
       const isAuthEndpoint = error.config?.url?.includes('/login') || error.config?.url?.includes('/register');
+      const currentPath = window.location.pathname;
       
-      if (!isAuthEndpoint && (error.response?.status === 401 || error.response?.status === 403)) {
-        // Only redirect if we're not already on login page
-        const currentPath = window.location.pathname;
-        if (currentPath !== '/login' && currentPath !== '/register') {
+      // Only redirect on 401 for protected routes and not already on auth pages
+      if (!isAuthEndpoint && error.response?.status === 401 && 
+          currentPath !== '/login' && currentPath !== '/register') {
+        
+        // Add delay to prevent immediate redirects
+        setTimeout(() => {
           console.warn('Authentication failed:', error.response?.data?.message || 'Unauthorized');
           clearAuth();
-          if (navigate) {
+          if (navigate && window.location.pathname !== '/login') {
             navigate('/login');
           }
-        }
+        }, 100);
       }
       return Promise.reject(error);
     }
@@ -56,25 +59,19 @@ const checkTokenOnLoad = (navigate) => {
     const user = localStorage.getItem('user');
     
     if (!token || !user) {
-      clearAuth();
       return false;
     }
     
+    // Be more lenient on app load - only clear if token is severely expired
     if (!isTokenValid(token)) {
-      console.warn('Token expired on app load');
-      clearAuth();
-      // Only redirect if not already on auth pages
-      const currentPath = window.location.pathname;
-      if (navigate && currentPath !== '/login' && currentPath !== '/register') {
-        navigate('/login');
-      }
+      console.warn('Token validation failed on app load');
+      // Don't immediately clear auth, let the server decide
       return false;
     }
     
     return true;
   } catch (error) {
     console.error('Error checking token on load:', error);
-    clearAuth();
     return false;
   }
 };
