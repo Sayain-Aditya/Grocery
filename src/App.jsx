@@ -71,7 +71,6 @@ const App = () => {
 // Protected route components
 function RequireAuth({ children }) {
   if (!isAuthenticated()) {
-    clearAuth();
     return <Navigate to="/login" replace />;
   }
   return children;
@@ -79,7 +78,6 @@ function RequireAuth({ children }) {
 
 function RequireAdmin({ children }) {
   if (!isAuthenticated()) {
-    clearAuth();
     return <Navigate to="/login" replace />;
   }
   if (!isAdmin()) {

@@ -1,7 +1,6 @@
 import React from "react";
 import axios from "axios";
 import { Link, useNavigate } from "react-router-dom";
-import { isTokenValid } from '../utils/auth';
 
 const LoginPage = () => {
   const [email, setEmail] = React.useState("");
@@ -13,14 +12,17 @@ const LoginPage = () => {
 
   // Check if user is already logged in
   React.useEffect(() => {
-    const token = localStorage.getItem('token');
     const user = localStorage.getItem('user');
-    if (token && user && isTokenValid(token)) {
-      const userData = JSON.parse(user);
-      if (userData.role === 'admin') {
-        navigate('/admin');
-      } else {
-        navigate('/home');
+    if (user) {
+      try {
+        const userData = JSON.parse(user);
+        if (userData.role === 'admin') {
+          navigate('/admin');
+        } else {
+          navigate('/home');
+        }
+      } catch (error) {
+        localStorage.removeItem('user');
       }
     }
   }, [navigate]);
@@ -62,7 +64,6 @@ const LoginPage = () => {
       });
 
       if (res.data.success) {
-        localStorage.setItem("token", res.data.token);
         localStorage.setItem("user", JSON.stringify(res.data.user));
 
         setMessage("Login successful! Redirecting...");
