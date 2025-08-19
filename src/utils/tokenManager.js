@@ -34,15 +34,17 @@ const setupAxiosInterceptors = (navigate) => {
       const isAuthEndpoint = error.config?.url?.includes('/login') || error.config?.url?.includes('/register');
       const currentPath = window.location.pathname;
       
-      // Only redirect on 401 for protected routes, be more selective
+      // Only redirect on specific token errors
       if (!isAuthEndpoint && error.response?.status === 401 && 
-          currentPath !== '/login' && currentPath !== '/register' &&
-          error.response?.data?.message?.includes('expired')) {
+          currentPath !== '/login' && currentPath !== '/register') {
         
-        console.warn('Token expired, redirecting to login');
-        clearAuth();
-        if (navigate && window.location.pathname !== '/login') {
-          navigate('/login');
+        const errorMessage = error.response?.data?.message || '';
+        if (errorMessage.includes('expired') || errorMessage.includes('Invalid token')) {
+          console.warn('Authentication error:', errorMessage);
+          clearAuth();
+          if (navigate && window.location.pathname !== '/login') {
+            navigate('/login');
+          }
         }
       }
       return Promise.reject(error);
