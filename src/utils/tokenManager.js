@@ -34,18 +34,16 @@ const setupAxiosInterceptors = (navigate) => {
       const isAuthEndpoint = error.config?.url?.includes('/login') || error.config?.url?.includes('/register');
       const currentPath = window.location.pathname;
       
-      // Only redirect on 401 for protected routes and not already on auth pages
+      // Only redirect on 401 for protected routes, be more selective
       if (!isAuthEndpoint && error.response?.status === 401 && 
-          currentPath !== '/login' && currentPath !== '/register') {
+          currentPath !== '/login' && currentPath !== '/register' &&
+          error.response?.data?.message?.includes('expired')) {
         
-        // Add delay to prevent immediate redirects
-        setTimeout(() => {
-          console.warn('Authentication failed:', error.response?.data?.message || 'Unauthorized');
-          clearAuth();
-          if (navigate && window.location.pathname !== '/login') {
-            navigate('/login');
-          }
-        }, 100);
+        console.warn('Token expired, redirecting to login');
+        clearAuth();
+        if (navigate && window.location.pathname !== '/login') {
+          navigate('/login');
+        }
       }
       return Promise.reject(error);
     }

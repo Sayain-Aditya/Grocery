@@ -3,6 +3,7 @@ import axios from "axios";
 import { toast, ToastContainer } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 import { setupAxiosInterceptors } from '../utils/tokenManager';
+import API_BASE_URL from '../config/api';
 
 const AdminOrderManagement = () => {
   const [orders, setOrders] = useState([]);
@@ -17,7 +18,7 @@ const AdminOrderManagement = () => {
 
   const fetchOrders = async () => {
     try {
-      const res = await axios.get("https://backend-g-gold.vercel.app/api/orders/all");
+      const res = await axios.get(`${API_BASE_URL}/api/orders/all`);
       setOrders(res.data);
     } catch (err) {
       toast.error("Failed to fetch orders");
@@ -28,7 +29,7 @@ const AdminOrderManagement = () => {
 
   const updateOrderStatus = async (orderId, newStatus) => {
     try {
-      await axios.put(`https://backend-g-gold.vercel.app/api/orders/${orderId}/status`, {
+      await axios.put(`${API_BASE_URL}/api/orders/${orderId}/status`, {
         status: newStatus
       });
       toast.success("Order status updated!");
