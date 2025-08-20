@@ -220,7 +220,7 @@ const Profile = () => {
                   <span>Order History</span>
                 </button>
                 <button
-                  onClick={handleLogout}
+                  onClick={()=> handleLogout()}
                   className="bg-gradient-to-r from-red-500 to-red-600 text-white py-3 rounded-xl font-semibold hover:from-red-600 hover:to-red-700 transform hover:scale-105 transition-all duration-200 shadow-lg flex items-center justify-center space-x-2"
                 >
                   <span>🚪</span>

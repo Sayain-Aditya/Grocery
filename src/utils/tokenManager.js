@@ -34,20 +34,8 @@ const setupAxiosInterceptors = (navigate) => {
       const isAuthEndpoint = error.config?.url?.includes('/login') || error.config?.url?.includes('/register');
       const currentPath = window.location.pathname;
       
-      // Only redirect on 401 with specific error messages
-      if (!isAuthEndpoint && error.response?.status === 401 && 
-          currentPath !== '/login' && currentPath !== '/register') {
-        const errorMessage = error.response?.data?.message || '';
-        // Be more specific about when to redirect
-        if (errorMessage.includes('expired') || errorMessage.includes('No token provided') || 
-            errorMessage.includes('User not found')) {
-          console.warn('Authentication error:', errorMessage);
-          clearAuth();
-          if (navigate && window.location.pathname !== '/login') {
-            navigate('/login');
-          }
-        }
-      }
+      // Disable automatic auth clearing - let user manually logout
+      console.log('Request failed:', error.response?.status, error.response?.data?.message);
       return Promise.reject(error);
     }
   );

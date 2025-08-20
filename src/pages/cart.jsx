@@ -2,8 +2,6 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { toast, ToastContainer } from "react-toastify";
 import { useNavigate } from "react-router-dom";
-import { setupAxiosInterceptors } from '../utils/tokenManager';
-import { isAuthenticated } from '../utils/auth';
 
 const Cart = () => {
   const [cartItems, setCartItems] = useState([]);
@@ -13,9 +11,8 @@ const Cart = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    setupAxiosInterceptors(navigate);
     fetchCart();
-  }, [navigate]);
+  }, []);
 
   const fetchCart = async () => {
     try {
@@ -35,6 +32,8 @@ const Cart = () => {
   const fetchRecipeSuggestions = async () => {
     try {
       const res = await axios.get("https://backend-g-gold.vercel.app/api/cart/recipes");
+      console.log('Recipe API response:', res.data);
+      console.log('Suggestions array:', res.data.suggestions);
       setRecipeSuggestions(res.data.suggestions || []);
     } catch (err) {
       console.error("Failed to load recipe suggestions:", err);

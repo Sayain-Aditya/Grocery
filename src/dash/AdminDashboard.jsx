@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import { setupAxiosInterceptors } from '../utils/tokenManager';
+import { clearAuth } from '../utils/auth';
 import {
   LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer, BarChart, Bar,
 } from "recharts";
@@ -31,7 +32,7 @@ const AdminDashboard = () => {
   };
 
   const handleLogout = () => {
-    localStorage.clear();
+    clearAuth();
     navigate("/login");
   };
 

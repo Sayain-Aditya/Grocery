@@ -70,19 +70,32 @@ const App = () => {
 
 // Protected route components
 function RequireAuth({ children }) {
-  if (!isAuthenticated()) {
+  const token = localStorage.getItem('token');
+  const user = localStorage.getItem('user');
+  
+  if (!token || !user) {
     return <Navigate to="/login" replace />;
   }
   return children;
 }
 
 function RequireAdmin({ children }) {
-  if (!isAuthenticated()) {
+  const token = localStorage.getItem('token');
+  const user = localStorage.getItem('user');
+  
+  if (!token || !user) {
     return <Navigate to="/login" replace />;
   }
-  if (!isAdmin()) {
-    return <Navigate to="/home" replace />;
+  
+  try {
+    const userData = JSON.parse(user);
+    if (userData.role !== 'admin') {
+      return <Navigate to="/home" replace />;
+    }
+  } catch {
+    return <Navigate to="/login" replace />;
   }
+  
   return children;
 }
 

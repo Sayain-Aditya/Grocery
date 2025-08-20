@@ -1,5 +1,6 @@
 import React from "react";
 import { useEffect } from "react";
+import { clearAuth } from '../utils/auth';
 
 const Dashboard = () => {
   const [user, setUser] = React.useState(null);
@@ -14,9 +15,8 @@ const Dashboard = () => {
     }
   }, []);
 
-  const handleLofout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
+  const handleLogout = () => {
+    clearAuth();
     window.location.href = "/login";
   };
   return (
@@ -31,7 +31,7 @@ const Dashboard = () => {
             <strong>Role:</strong> {user.role}
           </p>
           <button
-            onClick={handleLofout}
+            onClick={handleLogout}
             className="bg-red-500 text-white p-2 rounded shadow-md hover:bg-red-600"
           >
             Logout

@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
-import { setupAxiosInterceptors, checkTokenOnLoad } from '../utils/tokenManager';
-import { isAuthenticated, clearAuth } from '../utils/auth';
+import { setupAxiosInterceptors } from '../utils/tokenManager';
+import { clearAuth } from '../utils/auth';
 
 const HomePage = () => {
   const [products, setProducts] = useState([]);
@@ -16,28 +16,16 @@ const HomePage = () => {
     // Setup axios interceptors for token handling
     setupAxiosInterceptors(navigate);
     
-    // Check token validity on component mount
-    const isValidSession = checkTokenOnLoad(navigate);
-    
+    // Simply check if user data exists without validation
     const userData = localStorage.getItem("user");
-    if (userData && isValidSession) {
+    const token = localStorage.getItem("token");
+    
+    if (userData && token) {
       setUser(JSON.parse(userData));
       fetchRecentOrders();
       fetchCartCount();
     }
     fetchProducts();
-    
-    // Set up periodic token validation
-    const tokenCheckInterval = setInterval(() => {
-      if (!isAuthenticated()) {
-        clearAuth();
-        setUser(null);
-        setCartCount(0);
-        setRecentOrders([]);
-      }
-    }, 60000); // Check every minute
-    
-    return () => clearInterval(tokenCheckInterval);
   }, [navigate]);
 
   const fetchProducts = async () => {
@@ -50,37 +38,32 @@ const HomePage = () => {
   };
 
   const fetchRecentOrders = async () => {
-    if (!isAuthenticated()) return;
+    const token = localStorage.getItem('token');
+    if (!token) return;
     
     try {
       const res = await axios.get("https://backend-g-gold.vercel.app/api/orders/my");
       setRecentOrders(res.data.slice(0, 3));
     } catch (err) {
-      if (err.message === 'Session expired. Please login again.') {
-        setUser(null);
-        setRecentOrders([]);
-      }
       console.error("Failed to fetch recent orders:", err);
     }
   };
 
   const fetchCartCount = async () => {
-    if (!isAuthenticated()) return;
+    const token = localStorage.getItem('token');
+    if (!token) return;
     
     try {
       const res = await axios.get("https://backend-g-gold.vercel.app/api/cart/get");
       setCartCount(res.data.length);
     } catch (err) {
-      if (err.message === 'Session expired. Please login again.') {
-        setUser(null);
-        setCartCount(0);
-      }
       console.error("Failed to fetch cart count:", err);
     }
   };
 
   const addToCart = async (productId) => {
-    if (!isAuthenticated()) {
+    const token = localStorage.getItem('token');
+    if (!token) {
       navigate("/login");
       return;
     }
@@ -90,13 +73,9 @@ const HomePage = () => {
         "https://backend-g-gold.vercel.app/api/cart/add",
         { productId, qty: 1 }
       );
-      fetchCartCount(); // Update cart count
+      fetchCartCount();
       alert("Added to cart!");
     } catch (err) {
-      if (err.message === 'Session expired. Please login again.') {
-        setUser(null);
-        setCartCount(0);
-      }
       console.error("Failed to add to cart:", err);
     }
   };

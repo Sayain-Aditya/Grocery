@@ -10,8 +10,8 @@ export const isTokenValid = (token) => {
     if (!payload.exp) return true; // If no expiration, consider valid
     
     const currentTime = Date.now() / 1000;
-    // More lenient - allow 10 minutes buffer and don't be too strict
-    return payload.exp > (currentTime - 600);
+    // Very lenient - allow tokens even if slightly expired
+    return payload.exp > (currentTime - 3600); // 1 hour buffer
   } catch (error) {
     console.warn('Token validation error:', error);
     // Don't fail validation on parsing errors, let server decide
