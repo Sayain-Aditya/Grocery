@@ -4,6 +4,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import VoiceOrdering from '../components/VoiceOrdering';
+import BarcodeScanner from '../components/BarcodeScanner';
 
 const ProductList = () => {
   const [products, setProducts] = React.useState([]);
@@ -21,6 +22,7 @@ const ProductList = () => {
   const [totalPages, setTotalPages] = React.useState(1);
   const [totalProducts, setTotalProducts] = React.useState(0);
   const [showVoiceOrdering, setShowVoiceOrdering] = React.useState(false);
+  const [showBarcodeScanner, setShowBarcodeScanner] = React.useState(false);
 
   const navigate = useNavigate();
 
@@ -446,6 +448,13 @@ const ProductList = () => {
           {/* Floating Action Buttons */}
           <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-4">
             <button
+              onClick={() => setShowBarcodeScanner(true)}
+              className="bg-gradient-to-r from-orange-600 to-red-600 text-white px-6 py-4 rounded-full shadow-2xl hover:from-orange-700 hover:to-red-700 transform hover:scale-110 transition-all duration-300 flex items-center space-x-2"
+            >
+              <span className="text-2xl">📱</span>
+              <span className="font-semibold">Scan</span>
+            </button>
+            <button
               onClick={() => setShowVoiceOrdering(true)}
               className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-4 rounded-full shadow-2xl hover:from-purple-700 hover:to-pink-700 transform hover:scale-110 transition-all duration-300 flex items-center space-x-2"
             >
@@ -466,6 +475,17 @@ const ProductList = () => {
             </Link>
           </div>
         </div>
+
+        {/* Barcode Scanner Modal */}
+        {showBarcodeScanner && (
+          <BarcodeScanner
+            onClose={() => setShowBarcodeScanner(false)}
+            onProductFound={(product) => {
+              handleAddToCart(product._id);
+              setShowBarcodeScanner(false);
+            }}
+          />
+        )}
 
         {/* Voice Ordering Modal */}
         {showVoiceOrdering && (

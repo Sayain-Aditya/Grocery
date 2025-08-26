@@ -21,9 +21,33 @@ const AdminDashboard = () => {
   const fetchStats = async () => {
     try {
       const statsRes = await axios.get("https://backend-g-gold.vercel.app/api/users/stats");
-      const ordersRes = await axios.get("https://backend-g-gold.vercel.app/api/orders");
       setStats(statsRes.data);
-      setOrders(ordersRes.data.slice(0, 5));
+      
+      // Mock orders data
+      const mockOrders = [
+        {
+          _id: "order1",
+          user: { name: "John Doe" },
+          total: 1250,
+          status: "delivered",
+          createdAt: new Date().toISOString()
+        },
+        {
+          _id: "order2", 
+          user: { name: "Jane Smith" },
+          total: 890,
+          status: "shipped",
+          createdAt: new Date().toISOString()
+        },
+        {
+          _id: "order3",
+          user: { name: "Bob Wilson" },
+          total: 2100,
+          status: "pending",
+          createdAt: new Date().toISOString()
+        }
+      ];
+      setOrders(mockOrders);
     } catch (error) {
       console.error("Failed to load data:", error);
     } finally {
