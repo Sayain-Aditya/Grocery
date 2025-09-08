@@ -2,8 +2,6 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { toast, ToastContainer } from "react-toastify";
 import { useNavigate } from "react-router-dom";
-import { setupAxiosInterceptors } from '../utils/tokenManager';
-import { isAuthenticated } from '../utils/auth';
 
 const Profile = () => {
   const [user, setUser] = useState({});
@@ -44,9 +42,8 @@ const Profile = () => {
   };
 
   useEffect(() => {
-    setupAxiosInterceptors(navigate);
     fetchUser();
-  }, [navigate]);
+  }, []);
 
   const handleUpdate = async (e) => {
     e.preventDefault();
@@ -69,9 +66,9 @@ const Profile = () => {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem("token");
     localStorage.removeItem("user");
     toast.success("Logged out!");
+    navigate('/login');
   };
 
   const handleViewOrders = () => {
@@ -100,7 +97,7 @@ const Profile = () => {
           <div className="lg:col-span-1">
             <div className="bg-white rounded-2xl shadow-xl p-6 text-center">
               <div className="w-24 h-24 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white text-3xl font-bold mx-auto mb-4">
-                {name.charAt(0).toUpperCase()}
+                {name && name.charAt(0).toUpperCase() || '?'}
               </div>
               <h3 className="text-xl font-bold text-gray-800 mb-2">{name}</h3>
               <p className="text-gray-600 mb-4">{user.email}</p>

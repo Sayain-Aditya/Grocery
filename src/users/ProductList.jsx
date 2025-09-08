@@ -161,18 +161,23 @@ const ProductList = () => {
         <ToastContainer position="top-right" autoClose={2000} />
         
         {/* Hero Section */}
-        <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white py-16">
+        <div className="bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 text-white py-20">
           <div className="max-w-7xl mx-auto px-4 text-center">
-            <h1 className="text-5xl font-bold mb-4">🛍️ Product Catalog</h1>
-            <p className="text-xl opacity-90">Discover amazing products at unbeatable prices</p>
+            <h1 className="text-6xl font-bold mb-6 animate-pulse">🌟 Premium Collection</h1>
+            <p className="text-2xl opacity-95 mb-8">Curated products for your lifestyle</p>
+            <div className="flex justify-center space-x-4">
+              <span className="bg-white/20 px-4 py-2 rounded-full text-sm font-medium">✨ Premium Quality</span>
+              <span className="bg-white/20 px-4 py-2 rounded-full text-sm font-medium">🚚 Fast Delivery</span>
+              <span className="bg-white/20 px-4 py-2 rounded-full text-sm font-medium">💯 Best Prices</span>
+            </div>
           </div>
         </div>
 
         <div className="max-w-7xl mx-auto px-4 py-8">
           {/* Modern Filter Section */}
-          <div className="bg-white rounded-2xl shadow-xl p-6 mb-8">
-            <h3 className="text-2xl font-semibold mb-6 text-gray-800 flex items-center">
-              <span className="mr-3">🔍</span> Find Your Perfect Product
+          <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-2xl p-8 mb-8 border border-gray-100">
+            <h3 className="text-3xl font-bold mb-8 text-gray-800 flex items-center">
+              <span className="mr-4 text-4xl">🎯</span> Discover Products
             </h3>
             <form onSubmit={handleSearchSubmit} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -270,64 +275,65 @@ const ProductList = () => {
               <div className="text-xl text-gray-600">Loading amazing products...</div>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
               {filterProducts.map((product) => (
                 <div
                   key={product._id}
-                  className="group bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden border border-gray-100 hover:border-blue-200 transform hover:-translate-y-1"
+                  className="group bg-white/90 backdrop-blur-sm rounded-3xl shadow-xl hover:shadow-2xl transition-all duration-500 overflow-hidden border border-gray-200 hover:border-emerald-300 transform hover:-translate-y-2 hover:rotate-1"
                 >
                   {/* Product Image */}
-                  <div className="relative overflow-hidden">
+                  <div className="relative overflow-hidden rounded-t-3xl">
                     {product.image ? (
                       <img
                         src={product.image}
                         alt={product.name}
-                        className="w-full h-56 object-cover group-hover:scale-110 transition-transform duration-300"
+                        className="w-full h-64 object-cover group-hover:scale-125 transition-transform duration-700"
                       />
                     ) : (
-                      <div className="w-full h-56 bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center text-gray-400">
+                      <div className="w-full h-64 bg-gradient-to-br from-emerald-100 via-teal-100 to-cyan-100 flex items-center justify-center text-gray-500">
                         <div className="text-center">
-                          <div className="text-4xl mb-2">🖼️</div>
-                          <span className="text-sm">No Image</span>
+                          <div className="text-6xl mb-3">🎁</div>
+                          <span className="text-lg font-medium">Premium Product</span>
                         </div>
                       </div>
                     )}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                     {product.stock <= 5 && product.stock > 0 && (
-                      <div className="absolute top-3 left-3 bg-orange-500 text-white px-2 py-1 rounded-full text-xs font-semibold">
-                        ⚠️ Low Stock
+                      <div className="absolute top-4 left-4 bg-gradient-to-r from-orange-500 to-red-500 text-white px-3 py-2 rounded-full text-sm font-bold shadow-lg animate-bounce">
+                        🔥 Limited Stock
                       </div>
                     )}
                     {product.stock === 0 && (
-                      <div className="absolute top-3 left-3 bg-red-500 text-white px-2 py-1 rounded-full text-xs font-semibold">
-                        ❌ Out of Stock
+                      <div className="absolute top-4 left-4 bg-gradient-to-r from-gray-600 to-gray-800 text-white px-3 py-2 rounded-full text-sm font-bold shadow-lg">
+                        😔 Sold Out
                       </div>
                     )}
+                    <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm p-2 rounded-full shadow-lg">
+                      <span className="text-2xl">💎</span>
+                    </div>
                   </div>
 
                   {/* Product Info */}
-                  <div className="p-6">
-                    <div className="flex items-start justify-between mb-3">
-                      <h3 className="text-lg font-bold text-gray-800 line-clamp-2 flex-1">
+                  <div className="p-8">
+                    <div className="mb-4">
+                      <h3 className="text-xl font-bold text-gray-800 mb-2 group-hover:text-emerald-600 transition-colors duration-300">
                         {product.name}
                       </h3>
-                    </div>
-                    
-                    <div className="flex items-center mb-3">
-                      <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">
-                        📂 {product.category}
+                      <span className="bg-gradient-to-r from-emerald-100 to-teal-100 text-emerald-800 px-3 py-1 rounded-full text-sm font-semibold">
+                        🏷️ {product.category}
                       </span>
                     </div>
                     
-                    <p className="text-gray-600 text-sm mb-4 line-clamp-2">
+                    <p className="text-gray-600 text-sm mb-6 leading-relaxed">
                       {product.description}
                     </p>
                     
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="text-2xl font-bold text-green-600">
+                    <div className="flex items-center justify-between mb-6">
+                      <div className="text-3xl font-bold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
                         ₹{product.price}
                       </div>
-                      <div className="text-sm text-gray-500">
-                        📦 Stock: <span className="font-semibold">{product.stock}</span>
+                      <div className="text-sm text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
+                        📦 {product.stock} left
                       </div>
                     </div>
 
@@ -357,9 +363,9 @@ const ProductList = () => {
                       <button
                         onClick={() => handleAddToCart(product._id)}
                         disabled={product.stock === 0}
-                        className="w-full bg-gradient-to-r from-green-500 to-green-600 text-white px-4 py-3 rounded-xl font-semibold shadow-lg hover:from-green-600 hover:to-green-700 transform hover:scale-105 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                        className="w-full bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 text-white px-6 py-4 rounded-2xl font-bold text-lg shadow-xl hover:shadow-2xl transform hover:scale-105 hover:-translate-y-1 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
                       >
-                        {product.stock === 0 ? '❌ Out of Stock' : '🛍️ Add to Cart'}
+                        {product.stock === 0 ? '😔 Sold Out' : '✨ Add to Cart'}
                       </button>
                     </div>
 
@@ -446,29 +452,26 @@ const ProductList = () => {
           )}
 
           {/* Floating Action Buttons */}
-          <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-4">
+          <div className="fixed bottom-8 right-8 z-50 flex flex-col gap-4">
             <button
               onClick={() => setShowBarcodeScanner(true)}
-              className="bg-gradient-to-r from-orange-600 to-red-600 text-white px-6 py-4 rounded-full shadow-2xl hover:from-orange-700 hover:to-red-700 transform hover:scale-110 transition-all duration-300 flex items-center space-x-2"
+              className="group bg-gradient-to-r from-orange-500 via-red-500 to-pink-500 text-white p-4 rounded-full shadow-2xl hover:shadow-3xl transform hover:scale-110 hover:rotate-12 transition-all duration-300"
             >
-              <span className="text-2xl">📱</span>
-              <span className="font-semibold">Scan</span>
+              <span className="text-3xl group-hover:animate-bounce">📱</span>
             </button>
             <button
               onClick={() => setShowVoiceOrdering(true)}
-              className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-4 rounded-full shadow-2xl hover:from-purple-700 hover:to-pink-700 transform hover:scale-110 transition-all duration-300 flex items-center space-x-2"
+              className="group bg-gradient-to-r from-purple-500 via-indigo-500 to-blue-500 text-white p-4 rounded-full shadow-2xl hover:shadow-3xl transform hover:scale-110 hover:rotate-12 transition-all duration-300"
             >
-              <span className="text-2xl">🎤</span>
-              <span className="font-semibold">Voice Order</span>
+              <span className="text-3xl group-hover:animate-pulse">🎤</span>
             </button>
             <Link
               to="/cart"
-              className="group relative bg-gradient-to-r from-green-500 to-green-600 text-white px-6 py-4 rounded-full shadow-2xl hover:from-green-600 hover:to-green-700 transform hover:scale-110 transition-all duration-300 flex items-center space-x-2"
+              className="group relative bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 text-white p-4 rounded-full shadow-2xl hover:shadow-3xl transform hover:scale-110 hover:rotate-12 transition-all duration-300"
             >
-              <span className="text-2xl">🛒</span>
-              <span className="font-semibold">Cart</span>
+              <span className="text-3xl group-hover:animate-bounce">🛒</span>
               {cartCount > 0 && (
-                <span className="absolute -top-2 -right-2 bg-red-500 text-white text-sm font-bold px-2 py-1 rounded-full animate-pulse">
+                <span className="absolute -top-2 -right-2 bg-gradient-to-r from-red-500 to-pink-500 text-white text-sm font-bold px-3 py-1 rounded-full animate-pulse shadow-lg">
                   {cartCount}
                 </span>
               )}
