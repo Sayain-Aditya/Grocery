@@ -17,7 +17,7 @@ import CheckoutPage from './pages/CheckoutPage';
 import AdminOrderList from './dash/AdminOrderList';
 import UserOrderHistory from './users/UserOrderHistory';
 import InvoicePage from './users/InvoicePage';
-import BarcodeScanner from './components/BarcodeScanner';
+
 
 const AppContent = () => {
   const navigate = useNavigate();
@@ -52,7 +52,7 @@ const AppContent = () => {
         <Route path="/admin/orders" element={<RequireAdmin><AdminOrderList /></RequireAdmin>} />
         <Route path="/my-orders" element={<RequireAuth><UserOrderHistory /></RequireAuth>} />
         <Route path="/invoice/:id" element={<RequireAuth><InvoicePage /></RequireAuth>} />
-        <Route path="/barcode-scanner" element={<RequireAuth><BarcodeScanner /></RequireAuth>} />
+
         
         {/* Redirect any unknown paths to login */}
 

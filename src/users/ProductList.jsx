@@ -4,7 +4,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import VoiceOrdering from '../components/VoiceOrdering';
-import BarcodeScanner from '../components/BarcodeScanner';
+
 
 const ProductList = () => {
   const [products, setProducts] = React.useState([]);
@@ -22,7 +22,7 @@ const ProductList = () => {
   const [totalPages, setTotalPages] = React.useState(1);
   const [totalProducts, setTotalProducts] = React.useState(0);
   const [showVoiceOrdering, setShowVoiceOrdering] = React.useState(false);
-  const [showBarcodeScanner, setShowBarcodeScanner] = React.useState(false);
+
 
   const navigate = useNavigate();
 
@@ -453,12 +453,7 @@ const ProductList = () => {
 
           {/* Floating Action Buttons */}
           <div className="fixed bottom-8 right-8 z-50 flex flex-col gap-4">
-            <button
-              onClick={() => setShowBarcodeScanner(true)}
-              className="group bg-gradient-to-r from-orange-500 via-red-500 to-pink-500 text-white p-4 rounded-full shadow-2xl hover:shadow-3xl transform hover:scale-110 hover:rotate-12 transition-all duration-300"
-            >
-              <span className="text-3xl group-hover:animate-bounce">📱</span>
-            </button>
+
             <button
               onClick={() => setShowVoiceOrdering(true)}
               className="group bg-gradient-to-r from-purple-500 via-indigo-500 to-blue-500 text-white p-4 rounded-full shadow-2xl hover:shadow-3xl transform hover:scale-110 hover:rotate-12 transition-all duration-300"
@@ -479,16 +474,7 @@ const ProductList = () => {
           </div>
         </div>
 
-        {/* Barcode Scanner Modal */}
-        {showBarcodeScanner && (
-          <BarcodeScanner
-            onClose={() => setShowBarcodeScanner(false)}
-            onProductFound={(product) => {
-              handleAddToCart(product._id);
-              setShowBarcodeScanner(false);
-            }}
-          />
-        )}
+
 
         {/* Voice Ordering Modal */}
         {showVoiceOrdering && (

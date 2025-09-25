@@ -10,7 +10,6 @@ const AddProducts = () => {
     description: "",
     image: "",
     stock: "",
-    barcode: "",
   });
   const [isadmin, setIsAdmin] = React.useState(false);
   const [message, setMessage] = React.useState("");
@@ -47,7 +46,6 @@ const AddProducts = () => {
         description: "",
         image: "",
         stock: "",
-        barcode: "",
       });
       setTimeout(() => navigate("/ProductList"), 1000);
     } catch (err) {
@@ -118,23 +116,7 @@ const AddProducts = () => {
           value={form.stock}
           onChange={(e) => setForm({ ...form, stock: e.target.value })}
         />
-        <div className="w-full">
-          <input
-            name="barcode"
-            type="text"
-            placeholder="Barcode (Optional - for scanning)"
-            className="w-full p-3 border border-blue-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400 shadow-sm bg-blue-50"
-            value={form.barcode}
-            onChange={(e) => setForm({ ...form, barcode: e.target.value })}
-          />
-          <button
-            type="button"
-            onClick={() => setForm({ ...form, barcode: Date.now().toString() })}
-            className="mt-2 w-full bg-gray-200 text-gray-700 p-2 rounded-lg text-sm hover:bg-gray-300 transition-colors"
-          >
-            📱 Generate Random Barcode
-          </button>
-        </div>
+
         <button
           type="submit"
           className="w-full bg-gradient-to-r from-blue-500 to-blue-700 text-white p-3 rounded-xl font-semibold shadow hover:from-blue-600 hover:to-blue-800 transition-colors text-lg tracking-wide"
