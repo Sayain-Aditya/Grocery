@@ -1,393 +1,671 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import axios from 'axios';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+  Mic, MicOff, X, ShoppingCart, CheckCircle2, RefreshCw,
+  Lightbulb, Volume2, Trash2, Globe, History, AlertCircle,
+  Package, ChevronDown
+} from 'lucide-react';
+import { speak, LANGUAGES, findProduct, parseCommand, API, translateToEnglish } from './voiceUtils';
 
-const VoiceOrdering = ({ products, onAddToCart, onClose }) => {
+const VoiceOrdering = ({ products, onAddToCart, onClose, navigate }) => {
   const [isListening, setIsListening] = useState(false);
   const [transcript, setTranscript] = useState('');
-  const [voiceCart, setVoiceCart] = useState([]);
-  const [currentStep, setCurrentStep] = useState('listening'); // listening, confirming, completed
-  const [recognizedItems, setRecognizedItems] = useState([]);
-
-  const recognitionRef = useRef(null);
+  const [step, setStep] = useState('idle'); // idle | listening | confirming | done | error
+  const [recognized, setRecognized] = useState([]);
+  const [unmatched, setUnmatched] = useState([]);
+  const [actionResult, setActionResult] = useState(null); // for non-add actions
+  const [lang, setLang] = useState('en-US');
+  const [showLangMenu, setShowLangMenu] = useState(false);
+  const [cartItems, setCartItems] = useState([]);
+  const [lastOrder, setLastOrder] = useState(null);
+  const [ttsEnabled, setTtsEnabled] = useState(true);
   const [supported, setSupported] = useState(false);
+  const [continuous, setContinuous] = useState(false);
+  const [isTranslating, setIsTranslating] = useState(false);
+  const [translatedText, setTranslatedText] = useState('');
+  const recognitionRef = useRef(null);
+  const wakeWordRef = useRef(null);
+  const confirmRecRef = useRef(null);
+  const recognizedRef = useRef([]);
 
+  // keep ref in sync with state
+  useEffect(() => { recognizedRef.current = recognized; }, [recognized]);
+
+  // ── Init speech recognition ──────────────────────────────────────
   useEffect(() => {
-    // Check if browser supports speech recognition
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (SpeechRecognition) {
-      setSupported(true);
-      recognitionRef.current = new SpeechRecognition();
-      recognitionRef.current.continuous = true;
-      recognitionRef.current.interimResults = true;
-      recognitionRef.current.lang = 'en-US';
-      
-      recognitionRef.current.onresult = (event) => {
-        console.log('🎤 VOICE DETECTED! Result received:', event.results.length, 'results');
-        let finalTranscript = '';
-        let interimTranscript = '';
-        
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-          const transcript = event.results[i][0].transcript;
-          const confidence = event.results[i][0].confidence;
-          console.log(`Result ${i}: "${transcript}" (final: ${event.results[i].isFinal}, confidence: ${confidence})`);
-          
-          if (event.results[i].isFinal) {
-            finalTranscript += transcript;
-          } else {
-            interimTranscript += transcript;
-          }
-        }
-        
-        // Always show the latest transcript
-        const currentTranscript = finalTranscript || interimTranscript;
-        if (currentTranscript) {
-          console.log('📝 Setting transcript:', currentTranscript);
-          setTranscript(currentTranscript);
-        }
-        
-        if (finalTranscript) {
-          console.log('✅ Processing final transcript:', finalTranscript);
-          processVoiceCommand(finalTranscript);
-        }
-      };
-      
-      recognitionRef.current.onstart = () => {
-        console.log('🎤 Speech recognition started');
-        setIsListening(true);
-      };
-      
-      recognitionRef.current.onend = () => {
-        console.log('🛑 Speech recognition ended');
-        setIsListening(false);
-      };
-      
-      recognitionRef.current.onerror = (event) => {
-        console.error('❌ Speech recognition error:', event.error);
-        if (event.error === 'no-speech') {
-          console.warn('⚠️ No speech detected - try speaking louder or closer to microphone');
-        } else if (event.error === 'not-allowed') {
-          console.error('🚫 Microphone access denied - please allow microphone permission');
-        }
-        setIsListening(false);
-      };
-      
-      recognitionRef.current.onspeechstart = () => {
-        console.log('🗣️ Speech detected - user started speaking');
-      };
-      
-      recognitionRef.current.onspeechend = () => {
-        console.log('🤐 Speech ended - user stopped speaking');
-      };
-      
-      recognitionRef.current.onsoundstart = () => {
-        console.log('🔊 Sound detected');
-      };
-      
-      recognitionRef.current.onsoundend = () => {
-        console.log('🔇 Sound ended');
-      };
-    }
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) return;
+    setSupported(true);
   }, []);
 
-  // Voice synthesis disabled
+  // ── Fetch cart & last order on mount ────────────────────────────
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    axios.get(`${API}/cart/get`).then(r => setCartItems(r.data || [])).catch(() => {});
+    axios.get(`${API}/orders/my`).then(r => {
+      if (r.data?.length > 0) setLastOrder(r.data[0]);
+    }).catch(() => {});
+  }, []);
 
-  const processVoiceCommand = (command) => {
-    console.log('🎯 Processing command:', command);
-    console.log('📦 Available products:', products.map(p => p.name));
-    
-    // Convert number words to digits
-    const normalizedCommand = command.toLowerCase()
-      .replace(/\bone\b/g, '1')
-      .replace(/\btwo\b/g, '2')
-      .replace(/\bthree\b/g, '3')
-      .replace(/\bfour\b/g, '4')
-      .replace(/\bfive\b/g, '5')
-      .replace(/\bsix\b/g, '6')
-      .replace(/\bseven\b/g, '7')
-      .replace(/\beight\b/g, '8')
-      .replace(/\bnine\b/g, '9')
-      .replace(/\bten\b/g, '10');
-    
-    console.log('🔄 Normalized command:', normalizedCommand);
-    
-    const items = [];
-    
-    // Simple pattern: "add [number] [item]" or "add [item]"
-    const addPattern = /(?:add|get|need|want)\s+(?:(\d+)\s+)?([a-zA-Z][^,]*?)(?:\s*(?:and|,)|$)/gi;
-    let match;
-    
-    while ((match = addPattern.exec(normalizedCommand)) !== null) {
-      console.log('🔍 Match found:', match);
-      
-      const quantity = match[1] ? parseInt(match[1]) : 1;
-      const itemName = match[2] ? match[2].trim() : '';
-      
-      if (itemName) {
-        console.log('🔍 Looking for:', itemName, 'quantity:', quantity);
-        const matchedProduct = findMatchingProduct(itemName);
-        
-        if (matchedProduct) {
-          console.log('✅ Found product:', matchedProduct.name);
-          items.push({
-            product: matchedProduct,
-            quantity: quantity,
-            confidence: calculateConfidence(itemName, matchedProduct.name)
-          });
-        } else {
-          console.log('❌ No product found for:', itemName);
-        }
+  // ── Build recognition instance ───────────────────────────────────
+  const buildRecognition = useCallback((isContinuous = false) => {
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) return null;
+    const rec = new SR();
+    rec.continuous = isContinuous;
+    rec.interimResults = true;
+    rec.lang = lang;
+
+    rec.onresult = (event) => {
+      let interim = '', final = '';
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const t = event.results[i][0].transcript;
+        if (event.results[i].isFinal) final += t;
+        else interim += t;
       }
-    }
-    
-    console.log('📦 Found items:', items);
-    if (items.length > 0) {
-      // Automatically add items to cart
-      items.forEach(item => {
-        console.log('🛒 Adding to cart:', item.product.name, 'x', item.quantity);
-        onAddToCart(item.product._id);
-      });
-      
-      // Close popup immediately
-      setTimeout(() => {
-        onClose();
-      }, 1000);
-    } else {
-      console.log('⚠️ No items found in command');
-    }
-  };
-
-  const findMatchingProduct = (spokenName) => {
-    const spoken = spokenName.toLowerCase();
-    
-    // Direct match
-    let match = products.find(p => 
-      p.name.toLowerCase().includes(spoken) || 
-      spoken.includes(p.name.toLowerCase())
-    );
-    
-    if (match) return match;
-    
-    // Fuzzy matching for common variations
-    const variations = {
-      'apple': ['apples', 'apple'],
-      'banana': ['bananas', 'banana'],
-      'milk': ['milk', 'dairy milk'],
-      'bread': ['bread', 'loaf'],
-      'egg': ['eggs', 'egg'],
-      'rice': ['rice', 'basmati'],
-      'oil': ['oil', 'cooking oil'],
-      'sugar': ['sugar', 'white sugar']
+      setTranscript(final || interim);
+      if (final) handleFinalTranscriptWithTranslation(final);
     };
-    
-    for (const [key, variants] of Object.entries(variations)) {
-      if (variants.some(variant => spoken.includes(variant))) {
-        match = products.find(p => p.name.toLowerCase().includes(key));
-        if (match) return match;
+    rec.onstart = () => { setIsListening(true); setStep('listening'); };
+    rec.onend = () => {
+      setIsListening(false);
+      if (isContinuous && continuous) {
+        // restart for continuous mode
+        try { rec.start(); } catch {}
       }
+    };
+    rec.onerror = (e) => {
+      setIsListening(false);
+      if (step === 'listening') setStep('idle');
+    };
+    return rec;
+  }, [lang, continuous, step]);
+
+  // ── Wake word listener ───────────────────────────────────────────
+  useEffect(() => {
+    if (!supported) return;
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const wake = new SR();
+    wake.continuous = true;
+    wake.interimResults = false;
+    wake.lang = 'en-US';
+    wake.onresult = (event) => {
+      const t = event.results[event.results.length - 1][0].transcript.toLowerCase();
+      if (t.includes('hey freshmart') || t.includes('hey fresh mart')) {
+        if (ttsEnabled) speak('Yes, I am listening. What would you like to order?', lang);
+        startListening();
+      }
+    };
+    wake.onerror = () => {};
+    try { wake.start(); } catch {}
+    wakeWordRef.current = wake;
+    return () => { try { wake.stop(); } catch {} };
+  }, [supported, ttsEnabled, lang]);
+
+  // ── Auto-listen for yes/no confirmation ────────────────────────
+  useEffect(() => {
+    if (step !== 'confirming' || recognized.length === 0) return;
+    if (actionResult?.type === 'cart') return;
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) return;
+
+    const rec = new SR();
+    rec.lang = 'en-US';
+    rec.interimResults = false;
+    rec.continuous = false;
+    confirmRecRef.current = rec;
+
+    rec.onresult = async (e) => {
+      const said = e.results[0][0].transcript.toLowerCase().trim();
+      if (/\b(yes|yeah|yep|sure|ok|okay|add|confirm|do it|go ahead|haan|ha)\b/.test(said)) {
+        // use ref to get latest recognized — no stale closure
+        const items = recognizedRef.current;
+        for (const { product, qty } of items) {
+          await onAddToCart(product._id, qty);
+        }
+        const names = items.map(r => `${r.qty} ${r.product.name}`).join(', ');
+        if (ttsEnabled) speak(`Added ${names} to your cart.`, lang);
+        setStep('done');
+        setTimeout(onClose, 1500);
+      } else if (/\b(no|nope|cancel|stop|nahi|mat)\b/.test(said)) {
+        setTranscript('');
+        setRecognized([]);
+        setUnmatched([]);
+        setActionResult(null);
+        setTranslatedText('');
+        setIsTranslating(false);
+        setStep('idle');
+      }
+    };
+    rec.onerror = () => {};
+    rec.onend = () => {};
+
+    // small delay so the main mic has fully stopped before starting confirm mic
+    const t = setTimeout(() => { try { rec.start(); } catch {} }, 400);
+    return () => {
+      clearTimeout(t);
+      try { rec.stop(); } catch {}
+      confirmRecRef.current = null;
+    };
+  }, [step, recognized.length, actionResult?.type]);
+
+  // ── Auto-retry when nothing matched ──────────────────────────────
+  useEffect(() => {
+    if (step === 'confirming' && recognized.length === 0 && unmatched.length > 0 && !actionResult) {
+      const t = setTimeout(() => {
+        setTranscript(''); setRecognized([]); setUnmatched([]);
+        setActionResult(null); setTranslatedText(''); setIsTranslating(false);
+        setStep('idle');
+        setTimeout(startListening, 300);
+      }, 1800);
+      return () => clearTimeout(t);
     }
-    
-    return null;
+  }, [step, recognized.length, unmatched.length, actionResult]);
+
+  // ── Translate then process ──────────────────────────────────────
+  const handleFinalTranscriptWithTranslation = async (text) => {
+    setIsTranslating(true);
+    const english = await translateToEnglish(text, lang);
+    setTranslatedText(english !== text ? english : '');
+    setIsTranslating(false);
+    handleFinalTranscript(english);
   };
 
-  const calculateConfidence = (spoken, productName) => {
-    const spokenWords = spoken.toLowerCase().split(' ');
-    const productWords = productName.toLowerCase().split(' ');
-    
-    let matches = 0;
-    spokenWords.forEach(word => {
-      if (productWords.some(pWord => pWord.includes(word) || word.includes(pWord))) {
-        matches++;
-      }
+  // ── Handle final transcript ──────────────────────────────────────
+  const handleFinalTranscript = (text) => {
+    const parsed = parseCommand(text);
+
+    if (parsed.action === 'clear_cart') {
+      handleClearCart();
+      return;
+    }
+    if (parsed.action === 'read_cart') {
+      handleReadCart();
+      return;
+    }
+    if (parsed.action === 'checkout') {
+      if (ttsEnabled) speak('Taking you to checkout.', lang);
+      setTimeout(() => { onClose(); if (navigate) navigate('/checkout'); }, 800);
+      return;
+    }
+    if (parsed.action === 'reorder') {
+      handleReorder();
+      return;
+    }
+    if (parsed.action === 'filter') {
+      handleVoiceFilter(parsed);
+      return;
+    }
+    if (parsed.action === 'remove') {
+      handleVoiceRemove(parsed.name);
+      return;
+    }
+
+    // Default: add items
+    const matched = [], noMatch = [];
+    (parsed.items || []).forEach(({ name, qty }) => {
+      const result = findProduct(name, products);
+      if (result) matched.push({ product: result.product, qty: Math.max(1, qty), score: result.score });
+      else noMatch.push(name);
     });
-    
-    return matches / Math.max(spokenWords.length, productWords.length);
-  };
 
-  const confirmItems = (items) => {
-    // Items confirmed, no voice feedback
-  };
+    setRecognized(matched);
+    setUnmatched(noMatch);
 
-  const handleConfirmation = (confirmed) => {
-    if (confirmed) {
-      // Add items to cart
-      recognizedItems.forEach(item => {
-        onAddToCart(item.product, item.quantity);
-      });
-      
-      setVoiceCart([...voiceCart, ...recognizedItems]);
-      setCurrentStep('completed');
-      
-      // Items added silently
-      
-      setTimeout(() => {
-        onClose();
-      }, 3000);
+    if (matched.length > 0) {
+      const names = matched.map(m => `${m.qty} ${m.product.name}`).join(', ');
+      if (ttsEnabled) speak(`Found ${names}. Shall I add them to your cart?`, lang);
     } else {
-      setCurrentStep('listening');
-      setRecognizedItems([]);
-      // Ready for new input
-      startListening();
+      if (ttsEnabled) speak('Sorry, I could not find those products. Please try again.', lang);
+    }
+    setStep('confirming');
+  };
+
+  // ── Cart actions ─────────────────────────────────────────────────
+  const handleClearCart = async () => {
+    try {
+      await axios.delete(`${API}/cart/clear`);
+      setCartItems([]);
+      setActionResult({ type: 'success', msg: 'Cart cleared successfully!' });
+      if (ttsEnabled) speak('Your cart has been cleared.', lang);
+      setStep('done');
+      setTimeout(onClose, 2000);
+    } catch {
+      setActionResult({ type: 'error', msg: 'Failed to clear cart.' });
+      setStep('error');
     }
   };
 
+  const handleReadCart = () => {
+    if (cartItems.length === 0) {
+      if (ttsEnabled) speak('Your cart is empty.', lang);
+      setActionResult({ type: 'info', msg: 'Your cart is empty.' });
+    } else {
+      const names = cartItems.map(i => `${i.qty} ${i.product?.name}`).join(', ');
+      const total = cartItems.reduce((s, i) => s + i.product?.price * i.qty, 0);
+      if (ttsEnabled) speak(`Your cart has ${names}. Total is ${total} rupees.`, lang);
+      setActionResult({ type: 'cart', items: cartItems, total });
+    }
+    setStep('confirming');
+  };
+
+  const handleReorder = async () => {
+    if (!lastOrder) {
+      if (ttsEnabled) speak('You have no previous orders.', lang);
+      setActionResult({ type: 'error', msg: 'No previous orders found.' });
+      setStep('error');
+      return;
+    }
+    const items = lastOrder.items || [];
+    const matched = items.map(i => ({ product: i.product, qty: i.quantity })).filter(i => i.product);
+    setRecognized(matched);
+    setUnmatched([]);
+    const names = matched.map(m => `${m.qty} ${m.product?.name}`).join(', ');
+    if (ttsEnabled) speak(`Reordering ${names}. Shall I add them to your cart?`, lang);
+    setStep('confirming');
+  };
+
+  // ── Voice filter (cheap / expensive / category) ──────────────────
+  const handleVoiceFilter = ({ sort, category }) => {
+    let results = [...products];
+    if (sort === 'cheap') results.sort((a, b) => a.price - b.price);
+    else if (sort === 'expensive') results.sort((a, b) => b.price - a.price);
+    else if (category) {
+      results = results.filter(p =>
+        p.name.toLowerCase().includes(category) ||
+        p.category?.toLowerCase().includes(category)
+      );
+    }
+    const top = results.slice(0, 5);
+    if (top.length === 0) {
+      if (ttsEnabled) speak('No products found for that filter.', lang);
+      setActionResult({ type: 'error', msg: 'No products matched that filter.' });
+      setStep('error');
+      return;
+    }
+    const label = sort === 'cheap' ? 'cheapest' : sort === 'expensive' ? 'most expensive' : category;
+    if (ttsEnabled) speak(`Here are the ${label} products: ${top.map(p => p.name).join(', ')}`, lang);
+    setRecognized(top.map(p => ({ product: p, qty: 1, score: 1 })));
+    setUnmatched([]);
+    setActionResult({ type: 'filter', label });
+    setStep('confirming');
+  };
+
+  const handleVoiceRemove = async (spokenName) => {
+    const result = findProduct(spokenName, products);
+    if (!result) {
+      if (ttsEnabled) speak(`Could not find ${spokenName} in your cart.`, lang);
+      setActionResult({ type: 'error', msg: `Could not find "${spokenName}" to remove.` });
+      setStep('error');
+      return;
+    }
+    const cartItem = cartItems.find(i => i.product?._id === result.product._id);
+    if (!cartItem) {
+      if (ttsEnabled) speak(`${result.product.name} is not in your cart.`, lang);
+      setActionResult({ type: 'error', msg: `${result.product.name} is not in your cart.` });
+      setStep('error');
+      return;
+    }
+    try {
+      await axios.delete(`${API}/cart/remove/${cartItem._id}`);
+      setCartItems(prev => prev.filter(i => i._id !== cartItem._id));
+      if (ttsEnabled) speak(`${result.product.name} removed from cart.`, lang);
+      setActionResult({ type: 'success', msg: `${result.product.name} removed from cart.` });
+      setStep('done');
+      setTimeout(onClose, 1500);
+    } catch {
+      setActionResult({ type: 'error', msg: 'Failed to remove item.' });
+      setStep('error');
+    }
+  };
+
+  // ── Confirm add to cart ──────────────────────────────────────────
+  const handleConfirm = async () => {
+    for (const { product, qty } of recognized) {
+      await onAddToCart(product._id, qty);
+    }
+    const names = recognized.map(r => `${r.qty} ${r.product.name}`).join(', ');
+    if (ttsEnabled) speak(`Added ${names} to your cart.`, lang);
+    setStep('done');
+    setTimeout(onClose, 1500);
+  };
+
+  // ── Start / stop listening ───────────────────────────────────────
   const startListening = () => {
-    console.log('🚀 Attempting to start listening...');
-    console.log('Supported:', supported);
-    console.log('Recognition ref:', !!recognitionRef.current);
-    console.log('Currently listening:', isListening);
-    
-    if (supported && recognitionRef.current && !isListening) {
-      setTranscript('');
-      try {
-        console.log('▶️ Starting speech recognition...');
-        recognitionRef.current.start();
-      } catch (error) {
-        console.error('❌ Error starting recognition:', error);
-        setIsListening(false);
-      }
-    } else {
-      console.warn('⚠️ Cannot start listening - conditions not met');
-    }
+    if (!supported) return;
+    const rec = buildRecognition(continuous);
+    if (!rec) return;
+    recognitionRef.current = rec;
+    setTranscript('');
+    setRecognized([]);
+    setUnmatched([]);
+    setActionResult(null);
+    setTranslatedText('');
+    setIsTranslating(false);
+    try { rec.start(); } catch {}
   };
 
   const stopListening = () => {
-    if (recognitionRef.current && isListening) {
-      recognitionRef.current.stop();
-    }
+    try { recognitionRef.current?.stop(); } catch {}
     setIsListening(false);
   };
 
-  // No welcome voice message
+  const handleRetry = () => {
+    setTranscript('');
+    setRecognized([]);
+    setUnmatched([]);
+    setActionResult(null);
+    setTranslatedText('');
+    setIsTranslating(false);
+    setStep('idle');
+  };
 
+  // ── Render ───────────────────────────────────────────────────────
   if (!supported) {
     return (
-      <div className="text-center p-6">
-        <div className="text-6xl mb-4">🚫</div>
-        <h3 className="text-xl font-semibold text-red-600 mb-2">Voice Not Supported</h3>
-        <p className="text-gray-600">Your browser doesn't support voice recognition.</p>
+      <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md mx-auto text-center">
+        <MicOff className="w-16 h-16 text-red-400 mx-auto mb-4" />
+        <h3 className="text-xl font-bold text-red-600 mb-2">Voice Not Supported</h3>
+        <p className="text-gray-500 mb-4">Try Chrome or Edge browser.</p>
+        <button onClick={onClose} className="bg-gray-200 text-gray-700 px-6 py-2 rounded-xl font-semibold">Close</button>
       </div>
     );
   }
 
   return (
-    <div className="bg-white rounded-2xl shadow-2xl p-6 max-w-md mx-auto">
+    <motion.div
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.95 }}
+      className="bg-white rounded-2xl shadow-2xl p-6 max-w-md w-full mx-auto max-h-[90vh] overflow-y-auto"
+    >
       {/* Header */}
-      <div className="text-center mb-6">
-        <div className="text-6xl mb-4">🎤</div>
-        <h2 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-          Voice Shopping
-        </h2>
-        <p className="text-gray-600 mt-2">Speak naturally to add items to your cart</p>
-      </div>
-
-      {/* Voice Animation */}
-      <div className="flex justify-center mb-6">
-        <div className={`w-32 h-32 rounded-full flex items-center justify-center transition-all duration-300 ${
-          isListening 
-            ? 'bg-gradient-to-r from-red-400 to-pink-500 animate-pulse shadow-lg' 
-            : 'bg-gradient-to-r from-gray-300 to-gray-400'
-        }`}>
-          <div className="text-4xl text-white">
-            {isListening ? '🎙️' : '🔇'}
-          </div>
+      <div className="flex items-center justify-between mb-4">
+        <div>
+          <h2 className="text-xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+            Voice Shopping
+          </h2>
+          <p className="text-gray-400 text-xs mt-0.5">Say "Hey FreshMart" anytime to activate</p>
+        </div>
+        <div className="flex items-center gap-2">
+          {/* TTS Toggle */}
+          <button
+            onClick={() => setTtsEnabled(v => !v)}
+            title={ttsEnabled ? 'Mute voice feedback' : 'Enable voice feedback'}
+            className={`p-2 rounded-full transition-colors ${ttsEnabled ? 'bg-purple-100 text-purple-600' : 'bg-gray-100 text-gray-400'}`}
+          >
+            <Volume2 className="w-4 h-4" />
+          </button>
+          {/* Continuous mode */}
+          <button
+            onClick={() => setContinuous(v => !v)}
+            title={continuous ? 'Disable continuous mode' : 'Enable continuous mode'}
+            className={`p-2 rounded-full transition-colors text-xs font-bold ${continuous ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-400'}`}
+          >
+            ∞
+          </button>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 p-1">
+            <X className="w-5 h-5" />
+          </button>
         </div>
       </div>
 
-      {/* Status */}
-      <div className="text-center mb-6">
-        {currentStep === 'listening' && (
-          <div>
-            <p className="text-lg font-semibold text-gray-800 mb-2">
-              {isListening ? '🎧 Listening...' : '🔇 Ready to listen'}
-            </p>
-            <p className="text-sm text-gray-600">
-              Say: "Add apples" or "Add 2 bananas"
-            </p>
-          </div>
-        )}
-        
-        {currentStep === 'confirming' && (
-          <div>
-            <p className="text-lg font-semibold text-blue-600 mb-2">🤔 Confirming your order</p>
-            <div className="bg-blue-50 rounded-lg p-3 mb-4">
-              {recognizedItems.map((item, index) => (
-                <div key={index} className="flex justify-between items-center py-1">
-                  <span>{item.quantity}x {item.product.name}</span>
-                  <span className="text-green-600">₹{(item.product.price * item.quantity).toFixed(2)}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-        
-        {currentStep === 'completed' && (
-          <div>
-            <p className="text-lg font-semibold text-green-600 mb-2">✅ Items added to cart!</p>
-            <p className="text-sm text-gray-600">Closing in a moment...</p>
-          </div>
-        )}
-      </div>
-
-      {/* Transcript */}
-      {transcript && (
-        <div className="bg-gray-50 rounded-lg p-3 mb-4">
-          <p className="text-sm text-gray-600 mb-1">You said:</p>
-          <p className="text-gray-800 font-medium">"{transcript}"</p>
-        </div>
-      )}
-
-      {/* Controls */}
-      <div className="flex gap-3">
-        {currentStep === 'listening' && (
-          <>
-            <button
-              onClick={isListening ? stopListening : startListening}
-              className={`flex-1 py-3 px-4 rounded-xl font-semibold transition-all duration-200 ${
-                isListening
-                  ? 'bg-red-500 hover:bg-red-600 text-white'
-                  : 'bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 text-white'
-              }`}
-            >
-              {isListening ? '🛑 Stop' : '🎤 Start'}
-            </button>
-          </>
-        )}
-        
-        {currentStep === 'confirming' && (
-          <>
-            <button
-              onClick={() => handleConfirmation(true)}
-              className="flex-1 bg-green-500 hover:bg-green-600 text-white py-3 px-4 rounded-xl font-semibold transition-colors"
-            >
-              ✅ Yes, Add Items
-            </button>
-            <button
-              onClick={() => handleConfirmation(false)}
-              className="flex-1 bg-red-500 hover:bg-red-600 text-white py-3 px-4 rounded-xl font-semibold transition-colors"
-            >
-              ❌ Try Again
-            </button>
-          </>
-        )}
-        
+      {/* Language Selector */}
+      <div className="relative mb-4">
         <button
-          onClick={onClose}
-          className="bg-gray-500 hover:bg-gray-600 text-white py-3 px-4 rounded-xl font-semibold transition-colors"
+          onClick={() => setShowLangMenu(v => !v)}
+          className="flex items-center gap-2 px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors w-full"
         >
-          Close
+          <Globe className="w-4 h-4 text-purple-500" />
+          {LANGUAGES.find(l => l.code === lang)?.label || 'English'}
+          <ChevronDown className="w-4 h-4 ml-auto text-gray-400" />
+        </button>
+        <AnimatePresence>
+          {showLangMenu && (
+            <motion.div
+              initial={{ opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-10 overflow-hidden"
+            >
+              {LANGUAGES.map(l => (
+                <button
+                  key={l.code}
+                  onClick={() => { setLang(l.code); setShowLangMenu(false); }}
+                  className={`w-full text-left px-4 py-2.5 text-sm hover:bg-purple-50 transition-colors ${lang === l.code ? 'bg-purple-50 text-purple-700 font-semibold' : 'text-gray-700'}`}
+                >
+                  {l.label}
+                </button>
+              ))}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+
+      {/* Mic Button */}
+      <div className="flex justify-center mb-4">
+        <button
+          onClick={isListening ? stopListening : startListening}
+          disabled={step === 'confirming' || step === 'done'}
+          className={`w-24 h-24 rounded-full flex items-center justify-center transition-all duration-300 shadow-lg disabled:opacity-40 disabled:cursor-not-allowed ${
+            isListening
+              ? 'bg-gradient-to-br from-red-400 to-pink-500 scale-110'
+              : 'bg-gradient-to-br from-purple-500 to-indigo-600 hover:scale-105'
+          }`}
+        >
+          {isListening
+            ? <MicOff className="w-10 h-10 text-white" />
+            : <Mic className="w-10 h-10 text-white" />
+          }
         </button>
       </div>
 
+      {/* Listening wave animation */}
+      {isListening && (
+        <div className="flex justify-center gap-1 mb-3">
+          {[...Array(5)].map((_, i) => (
+            <motion.div
+              key={i}
+              className="w-1.5 bg-purple-500 rounded-full"
+              animate={{ height: ['8px', '24px', '8px'] }}
+              transition={{ duration: 0.6, repeat: Infinity, delay: i * 0.1 }}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* Status */}
+      <div className="text-center mb-3 text-sm font-medium">
+        {step === 'idle' && <span className="text-gray-500">Tap mic or say "Hey FreshMart"</span>}
+        {step === 'listening' && <span className="text-purple-600 flex items-center justify-center gap-1"><Volume2 className="w-4 h-4 animate-pulse" /> Listening...</span>}
+        {step === 'confirming' && <span className="text-blue-600">Review below</span>}
+        {step === 'done' && <span className="text-green-600 flex items-center justify-center gap-1"><CheckCircle2 className="w-4 h-4" /> Done!</span>}
+        {step === 'error' && <span className="text-red-500 flex items-center justify-center gap-1"><AlertCircle className="w-4 h-4" /> Something went wrong</span>}
+      </div>
+
+      {/* Transcript + translation */}
+      {transcript && (
+        <div className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 mb-3">
+          <p className="text-xs text-gray-400 mb-0.5">You said:</p>
+          <p className="text-gray-800 text-sm font-medium italic">"{transcript}"</p>
+          {isTranslating && (
+            <p className="text-xs text-purple-500 mt-1 animate-pulse">Translating...</p>
+          )}
+          {translatedText && !isTranslating && (
+            <p className="text-xs text-blue-500 mt-1">Translated: "{translatedText}"</p>
+          )}
+        </div>
+      )}
+
+      {/* Confirming: Add items */}
+      {step === 'confirming' && !actionResult && (
+        <div className="space-y-3 mb-4">
+          {recognized.length > 0 && (
+            <div className="bg-green-50 border border-green-200 rounded-xl p-4">
+              <p className="text-xs font-bold text-green-700 mb-2 uppercase tracking-wide">Items Found</p>
+              <div className="space-y-2">
+                {recognized.map(({ product, qty, score }, i) => (
+                  <div key={i} className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <ShoppingCart className="w-4 h-4 text-green-600 shrink-0" />
+                      <div>
+                        <span className="font-semibold text-gray-800 text-sm">{product.name}</span>
+                        {score && <span className="ml-1 text-xs text-gray-400">({Math.round(score * 100)}% match)</span>}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">×{qty}</span>
+                      <span className="font-bold text-green-600 text-sm">₹{(product.price * qty).toFixed(0)}</span>
+                    </div>
+                  </div>
+                ))}
+                <div className="border-t border-green-200 pt-2 flex justify-between text-sm font-bold text-green-700">
+                  <span>Total</span>
+                  <span>₹{recognized.reduce((s, r) => s + r.product.price * r.qty, 0).toFixed(0)}</span>
+                </div>
+              </div>
+            </div>
+          )}
+          {unmatched.length > 0 && (
+            <div className="bg-red-50 border border-red-200 rounded-xl p-3">
+              <p className="text-xs font-bold text-red-600 mb-1 uppercase tracking-wide">Not Found</p>
+              <p className="text-sm text-red-500">{unmatched.join(', ')}</p>
+              <p className="text-xs text-red-400 mt-1">Try saying the exact product name</p>
+            </div>
+          )}
+          {recognized.length === 0 && (
+            <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 text-center">
+              <p className="text-yellow-700 font-medium text-sm">No products matched.</p>
+              <p className="text-yellow-500 text-xs mt-1 animate-pulse">Restarting mic automatically...</p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Filter result */}
+      {step === 'confirming' && actionResult?.type === 'filter' && recognized.length > 0 && (
+        <div className="bg-purple-50 border border-purple-200 rounded-xl p-4 mb-4">
+          <p className="text-xs font-bold text-purple-700 mb-2 uppercase tracking-wide">
+            {actionResult.label} products
+          </p>
+          <div className="space-y-2">
+            {recognized.map(({ product }, i) => (
+              <div key={i} className="flex items-center justify-between text-sm">
+                <span className="text-gray-800 font-medium">{product.name}</span>
+                <span className="font-bold text-purple-600">₹{product.price}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Cart read result */}
+      {step === 'confirming' && actionResult?.type === 'cart' && (
+        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-4">
+          <p className="text-xs font-bold text-blue-700 mb-2 uppercase tracking-wide">Your Cart</p>
+          <div className="space-y-1.5">
+            {actionResult.items.map((item, i) => (
+              <div key={i} className="flex justify-between text-sm">
+                <span className="text-gray-700">{item.product?.name}</span>
+                <span className="text-gray-500">×{item.qty} — ₹{(item.product?.price * item.qty).toFixed(0)}</span>
+              </div>
+            ))}
+            <div className="border-t border-blue-200 pt-1.5 flex justify-between font-bold text-blue-700 text-sm">
+              <span>Total</span><span>₹{actionResult.total?.toFixed(0)}</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Action result (success/error/info) */}
+      {(step === 'done' || step === 'error') && actionResult && (
+        <div className={`rounded-xl p-4 mb-4 text-sm font-medium text-center ${
+          actionResult.type === 'success' ? 'bg-green-50 text-green-700 border border-green-200' :
+          actionResult.type === 'error' ? 'bg-red-50 text-red-600 border border-red-200' :
+          'bg-blue-50 text-blue-600 border border-blue-200'
+        }`}>
+          {actionResult.msg}
+        </div>
+      )}
+
+      <div className="flex flex-col gap-2 mb-4">
+        {step === 'confirming' && recognized.length > 0 && (!actionResult || actionResult.type === 'filter') && (
+          <>
+            <div className="flex gap-2">
+              <button onClick={handleConfirm} className="flex-1 bg-green-500 hover:bg-green-600 text-white py-2.5 rounded-xl font-bold text-sm transition-colors flex items-center justify-center gap-1.5">
+                <CheckCircle2 className="w-4 h-4" /> Add to Cart
+              </button>
+              <button onClick={handleRetry} className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-2.5 rounded-xl font-bold text-sm transition-colors flex items-center justify-center gap-1.5">
+                <RefreshCw className="w-4 h-4" /> Try Again
+              </button>
+            </div>
+            <p className="text-xs text-purple-500 animate-pulse flex items-center justify-center gap-1">
+              <Mic className="w-3 h-3" /> Mic is on — say "Yes" to add or "No" to cancel
+            </p>
+          </>
+        )}
+        {step === 'confirming' && (recognized.length === 0 || (actionResult && actionResult.type !== 'filter')) && (
+          <button onClick={handleRetry} className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-2.5 rounded-xl font-bold text-sm transition-colors flex items-center justify-center gap-1.5">
+            <RefreshCw className="w-4 h-4" /> Try Again
+          </button>
+        )}
+        {step === 'error' && (
+          <button onClick={handleRetry} className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-2.5 rounded-xl font-bold text-sm transition-colors flex items-center justify-center gap-1.5">
+            <RefreshCw className="w-4 h-4" /> Try Again
+          </button>
+        )}
+        {(step === 'idle' || step === 'listening') && (
+          <button onClick={onClose} className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-2.5 rounded-xl font-semibold text-sm transition-colors flex items-center justify-center gap-1.5">
+            <X className="w-4 h-4" /> Cancel
+          </button>
+        )}
+      </div>
+
+      {/* Quick command chips */}
+      {step === 'idle' && (
+        <div className="mb-4">
+          <p className="text-xs text-gray-400 mb-2 font-medium">Quick commands:</p>
+          <div className="flex flex-wrap gap-1.5">
+            {[
+              'Add 2 apples',
+              'Remove 2 milk',
+              'Clear cart',
+              'Show cheap items',
+              'What\'s in my cart?',
+              'Reorder last order',
+              'Checkout',
+            ].map(cmd => (
+              <button
+                key={cmd}
+                onClick={() => { setTranscript(cmd); handleFinalTranscript(cmd); }}
+                className="text-xs bg-purple-50 text-purple-700 border border-purple-200 px-2.5 py-1 rounded-full hover:bg-purple-100 transition-colors"
+              >
+                {cmd}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Tips */}
-      <div className="mt-6 p-3 bg-yellow-50 rounded-lg">
-        <p className="text-xs text-yellow-800 font-semibold mb-1">💡 Voice Tips:</p>
-        <ul className="text-xs text-yellow-700 space-y-1">
+      <div className="p-3 bg-purple-50 rounded-xl border border-purple-100">
+        <p className="text-xs font-bold text-purple-700 mb-1.5 flex items-center gap-1">
+          <Lightbulb className="w-3.5 h-3.5" /> Voice Commands:
+        </p>
+        <ul className="text-xs text-purple-600 space-y-0.5">
           <li>• "Add 2 apples and 3 bananas"</li>
-          <li>• "I need 1 milk and 2 bread"</li>
-          <li>• "Get me 5 eggs"</li>
+          <li>• "Remove 2 milk from cart"</li>
+          <li>• "Show me cheap items"</li>
+          <li>• "Show dairy products"</li>
+          <li>• "Clear my cart"</li>
+          <li>• "What's in my cart?"</li>
+          <li>• "Reorder my last order"</li>
+          <li>• "Checkout"</li>
         </ul>
       </div>
-    </div>
+    </motion.div>
   );
 };
 

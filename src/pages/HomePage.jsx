@@ -1,8 +1,19 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
-import { setupAxiosInterceptors } from '../utils/tokenManager';
-import { clearAuth } from '../utils/auth';
+import { motion, AnimatePresence } from "framer-motion";
+import { setupAxiosInterceptors } from "../utils/tokenManager";
+import { clearAuth } from "../utils/auth";
+import {
+  ShoppingCart, Search, Package, User, Truck, Leaf, Clock, Lock,
+  Flame, Star, MessageSquare, Mail, Apple, Milk, Popcorn, Carrot,
+  ChevronRight, Rocket
+} from "lucide-react";
+
+const fadeUp = {
+  hidden: { opacity: 0, y: 30 },
+  visible: (i = 0) => ({ opacity: 1, y: 0, transition: { delay: i * 0.1, duration: 0.5, ease: "easeOut" } }),
+};
 
 const HomePage = () => {
   const [products, setProducts] = useState([]);
@@ -10,16 +21,13 @@ const HomePage = () => {
   const [recentOrders, setRecentOrders] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [cartCount, setCartCount] = useState(0);
+  const [addedId, setAddedId] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Setup axios interceptors for token handling
     setupAxiosInterceptors(navigate);
-    
-    // Simply check if user data exists without validation
     const userData = localStorage.getItem("user");
     const token = localStorage.getItem("token");
-    
     if (userData && token) {
       setUser(JSON.parse(userData));
       fetchRecentOrders();
@@ -31,469 +39,474 @@ const HomePage = () => {
   const fetchProducts = async () => {
     try {
       const res = await axios.get("https://backend-g-gold.vercel.app/api/products/get?limit=8");
-      setProducts(res.data.products || []); // Handle the correct response structure
-    } catch (err) {
-      console.error("Failed to fetch products:", err);
-    }
+      setProducts(res.data.products || []);
+    } catch (err) { console.error(err); }
   };
 
   const fetchRecentOrders = async () => {
-    const token = localStorage.getItem('token');
-    if (!token) return;
-    
     try {
       const res = await axios.get("https://backend-g-gold.vercel.app/api/orders/my");
       setRecentOrders(res.data.slice(0, 3));
-    } catch (err) {
-      console.error("Failed to fetch recent orders:", err);
-    }
+    } catch (err) { console.error(err); }
   };
 
   const fetchCartCount = async () => {
-    const token = localStorage.getItem('token');
-    if (!token) return;
-    
     try {
       const res = await axios.get("https://backend-g-gold.vercel.app/api/cart/get");
       setCartCount(res.data.length);
-    } catch (err) {
-      console.error("Failed to fetch cart count:", err);
-    }
+    } catch (err) { console.error(err); }
   };
 
   const addToCart = async (productId) => {
-    const token = localStorage.getItem('token');
-    if (!token) {
-      navigate("/login");
-      return;
-    }
-    
+    if (!localStorage.getItem("token")) { navigate("/login"); return; }
     try {
-      await axios.post(
-        "https://backend-g-gold.vercel.app/api/cart/add",
-        { productId, qty: 1 }
-      );
+      await axios.post("https://backend-g-gold.vercel.app/api/cart/add", { productId, qty: 1 });
+      setAddedId(productId);
+      setTimeout(() => setAddedId(null), 1500);
       fetchCartCount();
-      alert("Added to cart!");
-    } catch (err) {
-      console.error("Failed to add to cart:", err);
-    }
+    } catch (err) { console.error(err); }
   };
 
   const handleSearch = () => {
-    if (searchTerm.trim()) {
-      navigate(`/products?search=${searchTerm}`);
-    }
+    if (searchTerm.trim()) navigate(`/products?search=${searchTerm}`);
   };
 
   const categories = [
-    { name: "Fruits", icon: "🍎", color: "bg-red-100" },
-    { name: "Vegetables", icon: "🥕", color: "bg-green-100" },
-    { name: "Dairy", icon: "🥛", color: "bg-blue-100" },
-    { name: "Snacks", icon: "🍿", color: "bg-yellow-100" },
+    { name: "Fruits", icon: <Apple className="w-10 h-10" />, bg: "from-red-400 to-orange-400" },
+    { name: "Vegetables", icon: <Carrot className="w-10 h-10" />, bg: "from-green-400 to-emerald-500" },
+    { name: "Dairy", icon: <Milk className="w-10 h-10" />, bg: "from-blue-400 to-cyan-400" },
+    { name: "Snacks", icon: <Popcorn className="w-10 h-10" />, bg: "from-yellow-400 to-amber-400" },
+  ];
+
+  const deals = [
+    { icon: <Carrot className="w-10 h-10" />, title: "Fresh Vegetables", desc: "20% OFF on all veggies", tag: "Save ₹200", bg: "from-green-500 to-emerald-600" },
+    { icon: <Apple className="w-10 h-10" />, title: "Fresh Fruits", desc: "Buy 2 Get 1 Free", tag: "Best Value", bg: "from-orange-500 to-red-500" },
+    { icon: <Milk className="w-10 h-10" />, title: "Dairy Products", desc: "15% OFF on dairy", tag: "Fresh & Pure", bg: "from-blue-500 to-indigo-500" },
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 via-blue-50 to-purple-50">
-      {/* Modern Header */}
-      <header className="bg-white/90 backdrop-blur-md shadow-lg sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 py-4">
-          <div className="flex justify-between items-center">
-            <div className="flex items-center space-x-4">
-              <h1 className="text-3xl font-bold bg-gradient-to-r from-green-600 to-blue-600 bg-clip-text text-transparent cursor-pointer hover:scale-105 transition-transform" onClick={() => navigate("/")}>
-                🛒 FreshMart
-              </h1>
-            </div>
-            
-            {/* Enhanced Search Bar */}
-            <div className="hidden md:flex items-center bg-gray-50 rounded-full px-4 py-2 shadow-inner">
-              <input
-                type="text"
-                placeholder="Search fresh products..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-                className="bg-transparent px-4 py-2 w-80 focus:outline-none text-gray-700 placeholder-gray-500"
-              />
-              <button
-                onClick={handleSearch}
-                className="bg-gradient-to-r from-green-500 to-green-600 text-white p-2 rounded-full hover:from-green-600 hover:to-green-700 transform hover:scale-110 transition-all duration-200 shadow-lg"
-              >
-                <span className="text-lg">🔍</span>
-              </button>
-            </div>
-            
-            {/* Modern Navigation */}
-            <div className="flex items-center space-x-3">
-              {user ? (
-                <>
-                  <div className="hidden lg:flex items-center bg-gradient-to-r from-blue-100 to-purple-100 px-4 py-2 rounded-full">
-                    <span className="text-gray-700 font-medium">👋 Hi, {user.name}!</span>
-                  </div>
-                  <button 
-                    onClick={() => navigate("/cart")} 
-                    className="relative bg-gradient-to-r from-green-500 to-green-600 text-white px-4 py-2 rounded-full hover:from-green-600 hover:to-green-700 transform hover:scale-105 transition-all duration-200 shadow-lg"
-                  >
-                    <span className="flex items-center space-x-2">
-                      <span>🛒</span>
-                      <span className="hidden sm:inline">Cart</span>
-                    </span>
-                    {cartCount > 0 && (
-                      <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-6 w-6 flex items-center justify-center font-bold animate-pulse">
-                        {cartCount}
-                      </span>
-                    )}
-                  </button>
-                  <button 
-                    onClick={() => navigate("/my-orders")} 
-                    className="bg-gradient-to-r from-orange-500 to-orange-600 text-white px-4 py-2 rounded-full hover:from-orange-600 hover:to-orange-700 transform hover:scale-105 transition-all duration-200 shadow-lg"
-                  >
-                    <span className="flex items-center space-x-2">
-                      <span>📦</span>
-                      <span className="hidden sm:inline">Orders</span>
-                    </span>
-                  </button>
-                  <button 
-                    onClick={() => navigate("/profile")} 
-                    className="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-4 py-2 rounded-full hover:from-blue-600 hover:to-blue-700 transform hover:scale-105 transition-all duration-200 shadow-lg"
-                  >
-                    <span className="flex items-center space-x-2">
-                      <span>👤</span>
-                      <span className="hidden sm:inline">Profile</span>
-                    </span>
-                  </button>
-                </>
-              ) : (
-                <button 
-                  onClick={() => navigate("/login")} 
-                  className="bg-gradient-to-r from-green-500 to-green-600 text-white px-6 py-3 rounded-full hover:from-green-600 hover:to-green-700 transform hover:scale-105 transition-all duration-200 shadow-lg font-semibold"
-                >
-                  🚀 Login
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
-      </header>
+    <div className="min-h-screen bg-gray-50">
+      {/* Navbar */}
+      <motion.header
+        initial={{ y: -80 }}
+        animate={{ y: 0 }}
+        transition={{ duration: 0.4, ease: "easeOut" }}
+        className="bg-white shadow-sm sticky top-0 z-50 border-b border-gray-100"
+      >
+        <div className="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center gap-4">
+          <motion.h1
+            whileHover={{ scale: 1.05 }}
+            className="text-2xl font-extrabold text-green-600 cursor-pointer flex items-center gap-2 shrink-0"
+            onClick={() => navigate("/")}
+          >
+            <ShoppingCart className="w-7 h-7" /> <span>FreshMart</span>
+          </motion.h1>
 
-      {/* Enhanced Hero Section */}
-      <section className="relative bg-gradient-to-br from-green-400 via-blue-500 to-purple-600 text-white py-24 overflow-hidden">
-        {/* Animated Background Elements */}
-        <div className="absolute inset-0 opacity-20">
-          <div className="absolute top-10 left-10 w-20 h-20 bg-white rounded-full animate-bounce"></div>
-          <div className="absolute top-32 right-20 w-16 h-16 bg-yellow-300 rounded-full animate-pulse"></div>
-          <div className="absolute bottom-20 left-1/4 w-12 h-12 bg-pink-300 rounded-full animate-bounce delay-1000"></div>
-          <div className="absolute bottom-32 right-1/3 w-14 h-14 bg-green-300 rounded-full animate-pulse delay-500"></div>
-        </div>
-        
-        <div className="max-w-7xl mx-auto px-4 text-center relative z-10">
-          <div className="animate-fade-in-up">
-            <h2 className="text-6xl md:text-7xl font-bold mb-6 leading-tight">
-              <span className="block">Fresh Groceries</span>
-              <span className="block bg-gradient-to-r from-yellow-300 to-orange-300 bg-clip-text text-transparent">
-                Delivered Fast 🚀
-              </span>
-            </h2>
-            <p className="text-xl md:text-2xl mb-10 opacity-90 max-w-3xl mx-auto leading-relaxed">
-              Get premium quality fruits, vegetables, and daily essentials delivered to your doorstep in under 2 hours
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-              <button 
-                onClick={() => navigate("/products")}
-                className="bg-white text-gray-800 px-10 py-4 rounded-full font-bold text-lg hover:bg-gray-100 transform hover:scale-110 transition-all duration-300 shadow-2xl flex items-center space-x-3"
-              >
-                <span>🛒</span>
-                <span>Shop Now</span>
-                <span>→</span>
-              </button>
-              <button 
-                onClick={() => navigate("/products")}
-                className="border-2 border-white text-white px-10 py-4 rounded-full font-bold text-lg hover:bg-white hover:text-gray-800 transform hover:scale-110 transition-all duration-300 flex items-center space-x-3"
-              >
-                <span>🍽️</span>
-                <span>Browse Categories</span>
-              </button>
-            </div>
+          {/* Search */}
+          <div className="hidden md:flex flex-1 max-w-md items-center bg-gray-100 rounded-full px-4 py-2 gap-2">
+            <Search className="w-4 h-4 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search fresh products..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+              className="bg-transparent flex-1 focus:outline-none text-gray-700 text-sm"
+            />
+            <motion.button
+              whileTap={{ scale: 0.9 }}
+              onClick={handleSearch}
+              className="bg-green-500 text-white px-3 py-1 rounded-full text-sm font-semibold hover:bg-green-600 transition-colors"
+            >
+              Search
+            </motion.button>
           </div>
+
+          {/* Nav Actions */}
+          <div className="flex items-center gap-2">
+            {user ? (
+              <>
+                <span className="hidden lg:block text-sm text-gray-600 font-medium">Hi, {user.name}!</span>
+                <NavBtn onClick={() => navigate("/cart")} color="green" badge={cartCount} icon={<ShoppingCart className="w-4 h-4" />}>Cart</NavBtn>
+                <NavBtn onClick={() => navigate("/my-orders")} color="orange" icon={<Package className="w-4 h-4" />}>Orders</NavBtn>
+                <NavBtn onClick={() => navigate("/profile")} color="blue" icon={<User className="w-4 h-4" />}>Profile</NavBtn>
+              </>
+            ) : (
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => navigate("/login")}
+                className="bg-green-500 text-white px-5 py-2 rounded-full font-semibold text-sm hover:bg-green-600 transition-colors shadow"
+              >
+                Login →
+              </motion.button>
+            )}
+          </div>
+        </div>
+      </motion.header>
+
+      {/* Hero */}
+      <section className="relative bg-gradient-to-br from-green-500 via-emerald-500 to-teal-600 text-white overflow-hidden">
+        <div className="absolute inset-0 overflow-hidden">
+          {["top-8 left-8", "top-24 right-16", "bottom-12 left-1/4", "bottom-20 right-1/3"].map((pos, i) => (
+            <motion.div
+              key={i}
+              className={`absolute w-16 h-16 bg-white/10 rounded-full ${pos}`}
+              animate={{ y: [0, -15, 0] }}
+              transition={{ duration: 3 + i, repeat: Infinity, ease: "easeInOut" }}
+            />
+          ))}
+        </div>
+        <div className="max-w-7xl mx-auto px-4 py-24 text-center relative z-10">
+          <motion.div initial="hidden" animate="visible" variants={fadeUp}>
+            <motion.h2
+              variants={fadeUp}
+              className="text-5xl md:text-6xl font-extrabold mb-5 leading-tight"
+            >
+              Fresh Groceries,<br />
+              <span className="text-yellow-300 flex items-center justify-center gap-3">Delivered Fast <Rocket className="w-10 h-10 inline" /></span>
+            </motion.h2>
+            <motion.p variants={fadeUp} custom={1} className="text-lg md:text-xl opacity-90 mb-8 max-w-2xl mx-auto">
+              Premium quality fruits, vegetables & daily essentials at your doorstep in under 2 hours.
+            </motion.p>
+            <motion.div variants={fadeUp} custom={2} className="flex flex-col sm:flex-row gap-4 justify-center">
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => navigate("/products")}
+                className="bg-white text-green-700 px-8 py-3.5 rounded-full font-bold text-lg shadow-xl hover:shadow-2xl transition-all flex items-center gap-2"
+              >
+                <ShoppingCart className="w-5 h-5" /> Shop Now
+              </motion.button>
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => navigate("/products")}
+                className="border-2 border-white/70 text-white px-8 py-3.5 rounded-full font-bold text-lg hover:bg-white/10 transition-all"
+              >
+                Browse Categories
+              </motion.button>
+            </motion.div>
+          </motion.div>
         </div>
       </section>
 
-      {/* Enhanced Daily Deals */}
-      <section className="py-16 bg-gradient-to-r from-red-50 via-orange-50 to-yellow-50">
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="text-center mb-12">
-            <h3 className="text-4xl font-bold bg-gradient-to-r from-red-600 to-orange-600 bg-clip-text text-transparent mb-4">
-              🔥 Today's Hot Deals
-            </h3>
-            <p className="text-gray-600 text-lg">Limited time offers - Grab them before they're gone!</p>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="bg-gradient-to-br from-green-400 to-green-500 text-white p-6 rounded-2xl shadow-xl transform hover:scale-105 transition-all duration-300 hover:shadow-2xl">
-              <div className="text-4xl mb-3">🥕</div>
-              <h4 className="text-xl font-bold mb-2">Fresh Vegetables</h4>
-              <p className="text-lg opacity-90 mb-3">20% OFF on all vegetables</p>
-              <div className="bg-white/20 px-3 py-1 rounded-full text-sm font-semibold inline-block">
-                Save up to ₹200
-              </div>
-            </div>
-            <div className="bg-gradient-to-br from-orange-400 to-red-500 text-white p-6 rounded-2xl shadow-xl transform hover:scale-105 transition-all duration-300 hover:shadow-2xl">
-              <div className="text-4xl mb-3">🍎</div>
-              <h4 className="text-xl font-bold mb-2">Fresh Fruits</h4>
-              <p className="text-lg opacity-90 mb-3">Buy 2 Get 1 Free</p>
-              <div className="bg-white/20 px-3 py-1 rounded-full text-sm font-semibold inline-block">
-                Best Value Deal
-              </div>
-            </div>
-            <div className="bg-gradient-to-br from-blue-400 to-purple-500 text-white p-6 rounded-2xl shadow-xl transform hover:scale-105 transition-all duration-300 hover:shadow-2xl">
-              <div className="text-4xl mb-3">🥛</div>
-              <h4 className="text-xl font-bold mb-2">Dairy Products</h4>
-              <p className="text-lg opacity-90 mb-3">15% OFF on all dairy</p>
-              <div className="bg-white/20 px-3 py-1 rounded-full text-sm font-semibold inline-block">
-                Fresh & Pure
-              </div>
-            </div>
-          </div>
+      {/* Stats Bar */}
+      <motion.section
+        initial={{ opacity: 0, y: 20 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        className="bg-white border-b border-gray-100"
+      >
+        <div className="max-w-7xl mx-auto px-4 py-5 grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+          {[
+            { icon: <Truck className="w-6 h-6 text-green-600" />, label: "Free Delivery", sub: "On orders above ₹299" },
+            { icon: <Leaf className="w-6 h-6 text-green-600" />, label: "100% Fresh", sub: "Farm to doorstep" },
+            { icon: <Clock className="w-6 h-6 text-green-600" />, label: "2-Hour Delivery", sub: "Express service" },
+            { icon: <Lock className="w-6 h-6 text-green-600" />, label: "Secure Payments", sub: "100% safe checkout" },
+          ].map((s, i) => (
+            <motion.div key={i} initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} transition={{ delay: i * 0.1 }} viewport={{ once: true }}>
+              <div className="flex justify-center mb-1">{s.icon}</div>
+              <div className="font-bold text-gray-800 text-sm">{s.label}</div>
+              <div className="text-xs text-gray-500">{s.sub}</div>
+            </motion.div>
+          ))}
         </div>
-      </section>
+      </motion.section>
 
-      {/* Enhanced Categories */}
-      <section className="py-20 bg-white">
+      {/* Hot Deals */}
+      <section className="py-14 bg-gradient-to-r from-orange-50 to-red-50">
         <div className="max-w-7xl mx-auto px-4">
-          <div className="text-center mb-16">
-            <h3 className="text-5xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent mb-4">
-              🍽️ Shop by Category
-            </h3>
-            <p className="text-gray-600 text-xl">Explore our wide range of fresh products</p>
-          </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-            {categories.map((category, index) => (
-              <div 
-                key={category.name} 
-                className={`group ${category.color} p-8 rounded-3xl text-center cursor-pointer hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2 hover:scale-105 border-2 border-transparent hover:border-white`}
-                style={{ animationDelay: `${index * 100}ms` }}
-                onClick={() => navigate(`/products?category=${category.name}`)}
+          <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp} className="text-center mb-10">
+            <h3 className="text-3xl font-extrabold text-gray-800 mb-2 flex items-center justify-center gap-2"><Flame className="w-7 h-7 text-orange-500" /> Today's Hot Deals</h3>
+            <p className="text-gray-500">Limited time offers — grab them before they're gone!</p>
+          </motion.div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            {deals.map((deal, i) => (
+              <motion.div
+                key={i}
+                custom={i}
+                initial="hidden"
+                whileInView="visible"
+                viewport={{ once: true }}
+                variants={fadeUp}
+                whileHover={{ y: -6, scale: 1.02 }}
+                className={`bg-gradient-to-br ${deal.bg} text-white p-6 rounded-2xl shadow-lg cursor-pointer`}
+                onClick={() => navigate("/products")}
               >
-                <div className="text-6xl mb-6 group-hover:scale-125 transition-transform duration-300">{category.icon}</div>
-                <h4 className="text-xl font-bold text-gray-800 group-hover:text-gray-900 transition-colors">{category.name}</h4>
-                <p className="text-gray-600 mt-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                  Fresh & Quality
-                </p>
-                <div className="mt-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                  <span className="bg-white/50 px-4 py-2 rounded-full text-sm font-semibold text-gray-700">
-                    Explore →
-                  </span>
-                </div>
-              </div>
+                <div className="text-4xl mb-3">{deal.icon}</div>
+                <h4 className="text-xl font-bold mb-1">{deal.title}</h4>
+                <p className="opacity-90 mb-3">{deal.desc}</p>
+                <span className="bg-white/20 px-3 py-1 rounded-full text-sm font-semibold">{deal.tag}</span>
+              </motion.div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Recent Orders - Only for logged in users */}
-      {user && recentOrders.length > 0 && (
-        <section className="py-16 bg-blue-50">
-          <div className="max-w-7xl mx-auto px-4">
-            <h3 className="text-3xl font-bold text-center mb-12">Your Recent Orders</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {recentOrders.map((order) => (
-                <div key={order._id} className="bg-white p-6 rounded-lg shadow">
-                  <div className="flex justify-between items-center mb-4">
-                    <span className="text-sm text-gray-500">Order #{order._id.slice(-6)}</span>
-                    <span className={`px-2 py-1 rounded text-sm ${
-                      order.status === 'delivered' ? 'bg-green-100 text-green-800' :
-                      order.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                      'bg-blue-100 text-blue-800'
-                    }`}>
-                      {order.status}
-                    </span>
-                  </div>
-                  <p className="font-semibold mb-2">₹{order.total}</p>
-                  <p className="text-sm text-gray-600 mb-4">
-                    {new Date(order.createdAt).toLocaleDateString()}
-                  </p>
-                  <button 
-                    onClick={() => navigate('/my-orders')}
-                    className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700"
-                  >
-                    Reorder
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* Enhanced Featured Products */}
-      <section className="py-20 bg-gradient-to-br from-gray-50 to-blue-50">
+      {/* Categories */}
+      <section className="py-14 bg-white">
         <div className="max-w-7xl mx-auto px-4">
-          <div className="text-center mb-16">
-            <h3 className="text-5xl font-bold bg-gradient-to-r from-green-600 to-blue-600 bg-clip-text text-transparent mb-4">
-              ⭐ Featured Products
-            </h3>
-            <p className="text-gray-600 text-xl">Handpicked fresh products just for you</p>
+          <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp} className="text-center mb-10">
+            <h3 className="text-3xl font-extrabold text-gray-800 mb-2">Shop by Category</h3>
+            <p className="text-gray-500">Explore our wide range of fresh products</p>
+          </motion.div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
+            {categories.map((cat, i) => (
+              <motion.div
+                key={cat.name}
+                custom={i}
+                initial="hidden"
+                whileInView="visible"
+                viewport={{ once: true }}
+                variants={fadeUp}
+                whileHover={{ y: -8, scale: 1.04 }}
+                whileTap={{ scale: 0.97 }}
+                onClick={() => navigate(`/products?category=${cat.name}`)}
+                className={`bg-gradient-to-br ${cat.bg} text-white p-6 rounded-2xl text-center cursor-pointer shadow-md`}
+              >
+                <motion.div
+                  className="flex justify-center mb-3"
+                  whileHover={{ rotate: [0, -10, 10, 0] }}
+                  transition={{ duration: 0.4 }}
+                >
+                  {cat.icon}
+                </motion.div>
+                <h4 className="text-lg font-bold">{cat.name}</h4>
+                <p className="text-white/80 text-sm mt-1 flex items-center justify-center gap-1">Explore <ChevronRight className="w-4 h-4" /></p>
+              </motion.div>
+            ))}
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-            {products.map((product, index) => (
-              <div 
-                key={product._id} 
-                className="group bg-white rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-500 overflow-hidden border border-gray-100 hover:border-blue-200 transform hover:-translate-y-2"
-                style={{ animationDelay: `${index * 100}ms` }}
+        </div>
+      </section>
+
+      {/* Recent Orders */}
+      <AnimatePresence>
+        {user && recentOrders.length > 0 && (
+          <motion.section
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="py-14 bg-blue-50"
+          >
+            <div className="max-w-7xl mx-auto px-4">
+              <h3 className="text-2xl font-extrabold text-gray-800 mb-8 text-center">Your Recent Orders</h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                {recentOrders.map((order, i) => (
+                  <motion.div
+                    key={order._id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.1 }}
+                    className="bg-white p-5 rounded-2xl shadow-md border border-gray-100"
+                  >
+                    <div className="flex justify-between items-center mb-3">
+                      <span className="text-sm text-gray-500 font-medium">#{order._id.slice(-6)}</span>
+                      <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${
+                        order.status === "delivered" ? "bg-green-100 text-green-700" :
+                        order.status === "pending" ? "bg-yellow-100 text-yellow-700" :
+                        "bg-blue-100 text-blue-700"
+                      }`}>{order.status}</span>
+                    </div>
+                    <p className="font-bold text-lg text-gray-800 mb-1">₹{order.total}</p>
+                    <p className="text-sm text-gray-500 mb-4">{new Date(order.createdAt).toLocaleDateString()}</p>
+                    <motion.button
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.97 }}
+                      onClick={() => navigate("/my-orders")}
+                      className="w-full bg-blue-600 text-white py-2 rounded-xl text-sm font-semibold hover:bg-blue-700 transition-colors"
+                    >
+                      View Order
+                    </motion.button>
+                  </motion.div>
+                ))}
+              </div>
+            </div>
+          </motion.section>
+        )}
+      </AnimatePresence>
+
+      {/* Featured Products */}
+      <section className="py-14 bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4">
+          <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp} className="text-center mb-10">
+            <h3 className="text-3xl font-extrabold text-gray-800 mb-2 flex items-center justify-center gap-2"><Star className="w-7 h-7 text-yellow-400 fill-yellow-400" /> Featured Products</h3>
+            <p className="text-gray-500">Handpicked fresh products just for you</p>
+          </motion.div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {products.map((product, i) => (
+              <motion.div
+                key={product._id}
+                custom={i}
+                initial="hidden"
+                whileInView="visible"
+                viewport={{ once: true }}
+                variants={fadeUp}
+                whileHover={{ y: -6 }}
+                className="bg-white rounded-2xl shadow-md hover:shadow-xl transition-shadow overflow-hidden border border-gray-100 group"
               >
                 <div className="relative overflow-hidden">
-                  <img 
-                    src={product.image} 
-                    alt={product.name} 
-                    className="w-full h-56 object-cover group-hover:scale-110 transition-transform duration-500" 
+                  <motion.img
+                    src={product.image}
+                    alt={product.name}
+                    className="w-full h-48 object-cover"
+                    whileHover={{ scale: 1.08 }}
+                    transition={{ duration: 0.4 }}
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                  <div className="absolute top-4 right-4 bg-green-500 text-white px-3 py-1 rounded-full text-sm font-semibold opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                  <div className="absolute top-3 left-3 bg-green-500 text-white text-xs font-bold px-2.5 py-1 rounded-full">
                     Fresh
                   </div>
                 </div>
-                <div className="p-6">
-                  <h4 className="font-bold text-lg mb-3 text-gray-800 group-hover:text-blue-600 transition-colors">{product.name}</h4>
-                  <p className="text-gray-600 text-sm mb-4 line-clamp-2">{product.description}</p>
-                  <div className="flex items-center justify-between mb-4">
-                    <span className="text-2xl font-bold bg-gradient-to-r from-green-600 to-green-700 bg-clip-text text-transparent">
-                      ₹{product.price}
-                    </span>
-                    <div className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-semibold">
-                      Fresh
-                    </div>
+                <div className="p-4">
+                  <h4 className="font-bold text-gray-800 mb-1 truncate">{product.name}</h4>
+                  <p className="text-gray-500 text-sm mb-3 line-clamp-2">{product.description}</p>
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-xl font-extrabold text-green-600">₹{product.price}</span>
                   </div>
-                  <button 
+                    <motion.button
+                    whileHover={{ scale: 1.03 }}
+                    whileTap={{ scale: 0.96 }}
                     onClick={() => addToCart(product._id)}
-                    className="w-full bg-gradient-to-r from-green-500 to-green-600 text-white px-4 py-3 rounded-xl font-semibold hover:from-green-600 hover:to-green-700 transform hover:scale-105 transition-all duration-200 shadow-lg flex items-center justify-center space-x-2"
+                    className={`w-full py-2.5 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 ${
+                      addedId === product._id
+                        ? "bg-green-100 text-green-700 border-2 border-green-400"
+                        : "bg-green-500 text-white hover:bg-green-600 shadow"
+                    }`}
                   >
-                    <span>🛒</span>
-                    <span>Add to Cart</span>
-                  </button>
+                    <ShoppingCart className="w-4 h-4" />
+                    {addedId === product._id ? "Added!" : "Add to Cart"}
+                  </motion.button>
                 </div>
-              </div>
+              </motion.div>
             ))}
           </div>
-          <div className="text-center mt-12">
-            <button 
+          <div className="text-center mt-10">
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
               onClick={() => navigate("/products")}
-              className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-10 py-4 rounded-full font-bold text-lg hover:from-blue-700 hover:to-purple-700 transform hover:scale-110 transition-all duration-300 shadow-2xl flex items-center space-x-3 mx-auto"
+              className="bg-gray-800 text-white px-8 py-3.5 rounded-full font-bold text-lg hover:bg-gray-900 transition-colors shadow-lg"
             >
-              <span>🛍️</span>
-              <span>View All Products</span>
-              <span>→</span>
-            </button>
+              View All Products →
+            </motion.button>
           </div>
         </div>
       </section>
 
-      {/* Customer Testimonials */}
-      <section className="py-16 bg-green-50">
+      {/* Testimonials */}
+      <section className="py-14 bg-white">
         <div className="max-w-7xl mx-auto px-4">
-          <h3 className="text-3xl font-bold text-center mb-12">What Our Customers Say</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="bg-white p-6 rounded-lg shadow text-center">
-              <div className="text-yellow-400 text-2xl mb-4">⭐⭐⭐⭐⭐</div>
-              <p className="text-gray-600 mb-4">"Fresh vegetables and super fast delivery! Love shopping here."</p>
-              <p className="font-semibold">- Priya S.</p>
-            </div>
-            <div className="bg-white p-6 rounded-lg shadow text-center">
-              <div className="text-yellow-400 text-2xl mb-4">⭐⭐⭐⭐⭐</div>
-              <p className="text-gray-600 mb-4">"Best prices in town and excellent customer service!"</p>
-              <p className="font-semibold">- Raj K.</p>
-            </div>
-            <div className="bg-white p-6 rounded-lg shadow text-center">
-              <div className="text-yellow-400 text-2xl mb-4">⭐⭐⭐⭐⭐</div>
-              <p className="text-gray-600 mb-4">"Quality products delivered right to my doorstep. Highly recommended!"</p>
-              <p className="font-semibold">- Anita M.</p>
-            </div>
+          <motion.h3 initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp} className="text-3xl font-extrabold text-center text-gray-800 mb-10 flex items-center justify-center gap-2">
+            <MessageSquare className="w-7 h-7 text-blue-500" /> What Our Customers Say
+          </motion.h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {[
+              { text: "Fresh vegetables and super fast delivery! Love shopping here.", name: "Priya S." },
+              { text: "Best prices in town and excellent customer service!", name: "Raj K." },
+              { text: "Quality products delivered right to my doorstep. Highly recommended!", name: "Anita M." },
+            ].map((t, i) => (
+              <motion.div
+                key={i}
+                custom={i}
+                initial="hidden"
+                whileInView="visible"
+                viewport={{ once: true }}
+                variants={fadeUp}
+                whileHover={{ y: -4 }}
+                className="bg-gray-50 p-6 rounded-2xl border border-gray-100 shadow-sm"
+              >
+                <div className="flex text-yellow-400 text-xl mb-3">
+                {[...Array(5)].map((_, i) => <Star key={i} className="w-5 h-5 fill-yellow-400" />)}
+              </div>
+                <p className="text-gray-600 mb-4 italic">"{t.text}"</p>
+                <p className="font-bold text-gray-800">— {t.name}</p>
+              </motion.div>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* Features */}
-      <section className="py-16 bg-gray-100">
-        <div className="max-w-7xl mx-auto px-4">
-          <h3 className="text-3xl font-bold text-center mb-12">Why Choose Us?</h3>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-            <div className="text-center">
-              <div className="text-4xl mb-4">🚚</div>
-              <h4 className="text-xl font-semibold mb-2">Fast Delivery</h4>
-              <p className="text-gray-600">Get your groceries delivered within 2 hours</p>
+      {/* Newsletter */}
+      <section className="py-14 bg-gradient-to-r from-green-500 to-emerald-600 text-white">
+        <div className="max-w-xl mx-auto px-4 text-center">
+          <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp}>
+            <h3 className="text-3xl font-extrabold mb-3 flex items-center justify-center gap-2"><Mail className="w-7 h-7" /> Stay Updated!</h3>
+            <p className="opacity-90 mb-6">Get the latest deals and offers in your inbox</p>
+            <div className="flex rounded-full overflow-hidden shadow-xl">
+              <input
+                type="email"
+                placeholder="Enter your email"
+                className="flex-1 px-5 py-3 text-gray-800 focus:outline-none"
+              />
+              <button className="bg-gray-900 px-6 py-3 font-bold hover:bg-black transition-colors">
+                Subscribe
+              </button>
             </div>
-            <div className="text-center">
-              <div className="text-4xl mb-4">🌱</div>
-              <h4 className="text-xl font-semibold mb-2">Fresh Quality</h4>
-              <p className="text-gray-600">Hand-picked fresh fruits and vegetables</p>
-            </div>
-            <div className="text-center">
-              <div className="text-4xl mb-4">💰</div>
-              <h4 className="text-xl font-semibold mb-2">Best Prices</h4>
-              <p className="text-gray-600">Competitive prices with great deals</p>
-            </div>
-            <div className="text-center">
-              <div className="text-4xl mb-4">📱</div>
-              <h4 className="text-xl font-semibold mb-2">Easy Ordering</h4>
-              <p className="text-gray-600">Simple and intuitive shopping experience</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Newsletter Signup */}
-      <section className="py-16 bg-green-600 text-white">
-        <div className="max-w-7xl mx-auto px-4 text-center">
-          <h3 className="text-3xl font-bold mb-4">Stay Updated!</h3>
-          <p className="text-xl mb-8">Get the latest deals and offers delivered to your inbox</p>
-          <div className="flex justify-center max-w-md mx-auto">
-            <input
-              type="email"
-              placeholder="Enter your email"
-              className="flex-1 px-4 py-3 rounded-l-lg text-gray-800"
-            />
-            <button className="bg-blue-600 px-6 py-3 rounded-r-lg hover:bg-blue-700">
-              Subscribe
-            </button>
-          </div>
+          </motion.div>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="bg-gray-800 text-white py-12">
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-            <div>
-              <h4 className="text-xl font-bold mb-4">🛒 FreshMart</h4>
-              <p className="text-gray-400">Your trusted partner for fresh groceries and daily essentials.</p>
-            </div>
-            <div>
-              <h5 className="font-semibold mb-4">Quick Links</h5>
-              <ul className="space-y-2 text-gray-400">
-                <li><button onClick={() => navigate('/products')}>Products</button></li>
-                <li><button onClick={() => navigate('/cart')}>Cart</button></li>
-                <li><button onClick={() => navigate('/my-orders')}>Orders</button></li>
-              </ul>
-            </div>
-            <div>
-              <h5 className="font-semibold mb-4">Support</h5>
-              <ul className="space-y-2 text-gray-400">
-                <li>Help Center</li>
-                <li>Contact Us</li>
-                <li>Return Policy</li>
-              </ul>
-            </div>
-            <div>
-              <h5 className="font-semibold mb-4">Contact</h5>
-              <p className="text-gray-400">📞 +91 12345 67890</p>
-              <p className="text-gray-400">📧 support@freshmart.com</p>
-            </div>
+      <footer className="bg-gray-900 text-white py-12">
+        <div className="max-w-7xl mx-auto px-4 grid grid-cols-1 md:grid-cols-4 gap-8">
+          <div>
+            <h4 className="text-xl font-extrabold mb-3 flex items-center gap-2"><ShoppingCart className="w-5 h-5" /> FreshMart</h4>
+            <p className="text-gray-400 text-sm">Your trusted partner for fresh groceries and daily essentials.</p>
           </div>
-          <div className="border-t border-gray-700 mt-8 pt-8 text-center text-gray-400">
-            <p>&copy; 2024 FreshMart. All rights reserved.</p>
+          <div>
+            <h5 className="font-bold mb-3 text-gray-200">Quick Links</h5>
+            <ul className="space-y-2 text-gray-400 text-sm">
+              <li><button onClick={() => navigate("/products")} className="hover:text-white transition-colors">Products</button></li>
+              <li><button onClick={() => navigate("/cart")} className="hover:text-white transition-colors">Cart</button></li>
+              <li><button onClick={() => navigate("/my-orders")} className="hover:text-white transition-colors">Orders</button></li>
+            </ul>
           </div>
+          <div>
+            <h5 className="font-bold mb-3 text-gray-200">Support</h5>
+            <ul className="space-y-2 text-gray-400 text-sm">
+              <li>Help Center</li>
+              <li>Contact Us</li>
+              <li>Return Policy</li>
+            </ul>
+          </div>
+          <div>
+            <h5 className="font-bold mb-3 text-gray-200">Contact</h5>
+            <p className="text-gray-400 text-sm">📞 +91 12345 67890</p>
+            <p className="text-gray-400 text-sm">📧 support@freshmart.com</p>
+          </div>
+        </div>
+        <div className="border-t border-gray-800 mt-8 pt-6 text-center text-gray-500 text-sm">
+          © 2024 FreshMart. All rights reserved.
         </div>
       </footer>
     </div>
   );
 };
+
+function NavBtn({ onClick, color, badge, icon, children }) {
+  const colors = {
+    green: "bg-green-500 hover:bg-green-600",
+    orange: "bg-orange-500 hover:bg-orange-600",
+    blue: "bg-blue-500 hover:bg-blue-600",
+  };
+  return (
+    <motion.button
+      whileHover={{ scale: 1.05 }}
+      whileTap={{ scale: 0.95 }}
+      onClick={onClick}
+      className={`relative ${colors[color]} text-white px-4 py-2 rounded-full text-sm font-semibold transition-colors shadow flex items-center gap-1.5`}
+    >
+      {icon}{children}
+      {badge > 0 && (
+        <motion.span
+          initial={{ scale: 0 }}
+          animate={{ scale: 1 }}
+          className="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold"
+        >
+          {badge}
+        </motion.span>
+      )}
+    </motion.button>
+  );
+}
 
 export default HomePage;
