@@ -19,12 +19,16 @@ const LANGUAGES = [
 
 // ─── Text-to-speech helper ─────────────────────────────────────────
 const speak = (text, lang = 'en-US') => {
-  if (!window.speechSynthesis) return;
+  if (!window.speechSynthesis) return Promise.resolve();
   window.speechSynthesis.cancel();
   const u = new SpeechSynthesisUtterance(text);
   u.lang = lang;
   u.rate = 0.95;
-  window.speechSynthesis.speak(u);
+  return new Promise(resolve => {
+    u.onend = resolve;
+    u.onerror = resolve;
+    window.speechSynthesis.speak(u);
+  });
 };
 
 // ─── Normalize text ────────────────────────────────────────────────

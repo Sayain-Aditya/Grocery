@@ -28,6 +28,15 @@ const VoiceOrdering = ({ products, onAddToCart, onClose, navigate }) => {
   const wakeWordRef = useRef(null);
   const confirmRecRef = useRef(null);
   const recognizedRef = useRef([]);
+  const onAddToCartRef = useRef(onAddToCart);
+  const onCloseRef = useRef(onClose);
+  const ttsEnabledRef = useRef(ttsEnabled);
+  const langRef = useRef(lang);
+
+  useEffect(() => { onAddToCartRef.current = onAddToCart; }, [onAddToCart]);
+  useEffect(() => { onCloseRef.current = onClose; }, [onClose]);
+  useEffect(() => { ttsEnabledRef.current = ttsEnabled; }, [ttsEnabled]);
+  useEffect(() => { langRef.current = lang; }, [lang]);
 
   // keep ref in sync with state
   useEffect(() => { recognizedRef.current = recognized; }, [recognized]);
@@ -111,6 +120,7 @@ const VoiceOrdering = ({ products, onAddToCart, onClose, navigate }) => {
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SR) return;
 
+    let cancelled = false;
     const rec = new SR();
     rec.lang = 'en-US';
     rec.interimResults = false;
@@ -119,16 +129,15 @@ const VoiceOrdering = ({ products, onAddToCart, onClose, navigate }) => {
 
     rec.onresult = async (e) => {
       const said = e.results[0][0].transcript.toLowerCase().trim();
-      if (/\b(yes|yeah|yep|sure|ok|okay|add|confirm|do it|go ahead|haan|ha)\b/.test(said)) {
-        // use ref to get latest recognized — no stale closure
+      if (/\b(yes|yeah|yep|sure|ok|okay|confirm|do it|go ahead|haan|ha)\b/.test(said)) {
         const items = recognizedRef.current;
         for (const { product, qty } of items) {
-          await onAddToCart(product._id, qty);
+          await onAddToCartRef.current(product._id, qty);
         }
         const names = items.map(r => `${r.qty} ${r.product.name}`).join(', ');
-        if (ttsEnabled) speak(`Added ${names} to your cart.`, lang);
+        if (ttsEnabledRef.current) speak(`Added ${names} to your cart.`, langRef.current);
         setStep('done');
-        setTimeout(onClose, 1500);
+        setTimeout(() => onCloseRef.current(), 1500);
       } else if (/\b(no|nope|cancel|stop|nahi|mat)\b/.test(said)) {
         setTranscript('');
         setRecognized([]);
@@ -142,10 +151,26 @@ const VoiceOrdering = ({ products, onAddToCart, onClose, navigate }) => {
     rec.onerror = () => {};
     rec.onend = () => {};
 
-    // small delay so the main mic has fully stopped before starting confirm mic
-    const t = setTimeout(() => { try { rec.start(); } catch {} }, 400);
+    // Wait for TTS to finish speaking before opening the confirmation mic
+    // so it doesn't hear its own voice and auto-confirm
+    const startAfterTTS = async () => {
+      await new Promise(resolve => {
+        const check = () => {
+          if (!window.speechSynthesis.speaking) return resolve();
+          setTimeout(check, 100);
+        };
+        check();
+      });
+      if (!cancelled) {
+        // extra buffer after TTS ends
+        await new Promise(resolve => setTimeout(resolve, 300));
+        if (!cancelled) try { rec.start(); } catch {}
+      }
+    };
+    startAfterTTS();
+
     return () => {
-      clearTimeout(t);
+      cancelled = true;
       try { rec.stop(); } catch {}
       confirmRecRef.current = null;
     };
@@ -158,7 +183,7 @@ const VoiceOrdering = ({ products, onAddToCart, onClose, navigate }) => {
         setTranscript(''); setRecognized([]); setUnmatched([]);
         setActionResult(null); setTranslatedText(''); setIsTranslating(false);
         setStep('idle');
-        setTimeout(startListening, 300);
+        // Don't auto-start mic — let user tap manually to avoid hearing TTS
       }, 1800);
       return () => clearTimeout(t);
     }
@@ -252,19 +277,34 @@ const VoiceOrdering = ({ products, onAddToCart, onClose, navigate }) => {
   };
 
   const handleReorder = async () => {
-    if (!lastOrder) {
-      if (ttsEnabled) speak('You have no previous orders.', lang);
-      setActionResult({ type: 'error', msg: 'No previous orders found.' });
+    try {
+      const { data } = await axios.get(`${API}/orders/my`);
+      const latest = Array.isArray(data) && data.length > 0 ? data[0] : null;
+      if (!latest) {
+        if (ttsEnabled) speak('You have no previous orders.', lang);
+        setActionResult({ type: 'error', msg: 'No previous orders found.' });
+        setStep('error');
+        return;
+      }
+      setLastOrder(latest);
+      const items = latest.items || [];
+      const matched = items.map(i => ({ product: i.product, qty: i.quantity })).filter(i => i.product);
+      if (matched.length === 0) {
+        if (ttsEnabled) speak('Could not load items from your last order.', lang);
+        setActionResult({ type: 'error', msg: 'Last order has no items.' });
+        setStep('error');
+        return;
+      }
+      setRecognized(matched);
+      setUnmatched([]);
+      const names = matched.map(m => `${m.qty} ${m.product?.name}`).join(', ');
+      if (ttsEnabled) speak(`Reordering ${names}. Shall I add them to your cart?`, lang);
+      setStep('confirming');
+    } catch {
+      if (ttsEnabled) speak('Could not fetch your orders.', lang);
+      setActionResult({ type: 'error', msg: 'Failed to fetch previous orders.' });
       setStep('error');
-      return;
     }
-    const items = lastOrder.items || [];
-    const matched = items.map(i => ({ product: i.product, qty: i.quantity })).filter(i => i.product);
-    setRecognized(matched);
-    setUnmatched([]);
-    const names = matched.map(m => `${m.qty} ${m.product?.name}`).join(', ');
-    if (ttsEnabled) speak(`Reordering ${names}. Shall I add them to your cart?`, lang);
-    setStep('confirming');
   };
 
   // ── Voice filter (cheap / expensive / category) ──────────────────
@@ -301,14 +341,21 @@ const VoiceOrdering = ({ products, onAddToCart, onClose, navigate }) => {
       setStep('error');
       return;
     }
-    const cartItem = cartItems.find(i => i.product?._id === result.product._id);
-    if (!cartItem) {
-      if (ttsEnabled) speak(`${result.product.name} is not in your cart.`, lang);
-      setActionResult({ type: 'error', msg: `${result.product.name} is not in your cart.` });
-      setStep('error');
-      return;
-    }
     try {
+      // Always fetch fresh cart so we don't rely on stale state
+      const { data: freshCart } = await axios.get(`${API}/cart/get`);
+      setCartItems(freshCart || []);
+      const productId = result.product._id;
+      const cartItem = (freshCart || []).find(i => {
+        const id = i.product?._id ?? i.product;
+        return String(id) === String(productId);
+      });
+      if (!cartItem) {
+        if (ttsEnabled) speak(`${result.product.name} is not in your cart.`, lang);
+        setActionResult({ type: 'error', msg: `${result.product.name} is not in your cart.` });
+        setStep('error');
+        return;
+      }
       await axios.delete(`${API}/cart/remove/${cartItem._id}`);
       setCartItems(prev => prev.filter(i => i._id !== cartItem._id));
       if (ttsEnabled) speak(`${result.product.name} removed from cart.`, lang);
@@ -538,7 +585,7 @@ const VoiceOrdering = ({ products, onAddToCart, onClose, navigate }) => {
           {recognized.length === 0 && (
             <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 text-center">
               <p className="text-yellow-700 font-medium text-sm">No products matched.</p>
-              <p className="text-yellow-500 text-xs mt-1 animate-pulse">Restarting mic automatically...</p>
+              <p className="text-yellow-500 text-xs mt-1">Tap the mic to try again.</p>
             </div>
           )}
         </div>

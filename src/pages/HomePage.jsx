@@ -4,10 +4,11 @@ import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { setupAxiosInterceptors } from "../utils/tokenManager";
 import { clearAuth } from "../utils/auth";
+import VoiceOrdering from "../components/VoiceOrdering";
 import {
   ShoppingCart, Search, Package, User, Truck, Leaf, Clock, Lock,
   Flame, Star, MessageSquare, Mail, Apple, Milk, Popcorn, Carrot,
-  ChevronRight, Rocket
+  ChevronRight, Rocket, Mic
 } from "lucide-react";
 
 const fadeUp = {
@@ -22,6 +23,8 @@ const HomePage = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [cartCount, setCartCount] = useState(0);
   const [addedId, setAddedId] = useState(null);
+  const [showVoiceOrdering, setShowVoiceOrdering] = useState(false);
+  const [allProducts, setAllProducts] = useState([]);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -57,10 +60,11 @@ const HomePage = () => {
     } catch (err) { console.error(err); }
   };
 
-  const addToCart = async (productId) => {
+  const addToCart = async (productId, qty) => {
     if (!localStorage.getItem("token")) { navigate("/login"); return; }
+    const quantity = qty || 1;
     try {
-      await axios.post("https://backend-g-gold.vercel.app/api/cart/add", { productId, qty: 1 });
+      await axios.post("https://backend-g-gold.vercel.app/api/cart/add", { productId, qty: quantity });
       setAddedId(productId);
       setTimeout(() => setAddedId(null), 1500);
       fetchCartCount();
@@ -444,6 +448,47 @@ const HomePage = () => {
           </motion.div>
         </div>
       </section>
+
+      {/* Floating Mic Button */}
+      {user && (
+        <div className="fixed bottom-8 right-8 z-50">
+          <motion.button
+            whileHover={{ scale: 1.1, rotate: 12 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={async () => {
+              try {
+                const res = await axios.get('https://backend-g-gold.vercel.app/api/products/get?page=1&limit=10000');
+                setAllProducts(res.data.products || []);
+              } catch {
+                setAllProducts(products);
+              }
+              setShowVoiceOrdering(true);
+            }}
+            className="bg-gradient-to-r from-purple-500 to-indigo-500 text-white p-4 rounded-full shadow-2xl"
+          >
+            <Mic className="w-6 h-6" />
+          </motion.button>
+        </div>
+      )}
+
+      {/* Voice Ordering Modal */}
+      <AnimatePresence>
+        {showVoiceOrdering && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+          >
+            <VoiceOrdering
+              products={allProducts.length > 0 ? allProducts : products}
+              onAddToCart={addToCart}
+              onClose={() => setShowVoiceOrdering(false)}
+              navigate={navigate}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Footer */}
       <footer className="bg-gray-900 text-white py-12">

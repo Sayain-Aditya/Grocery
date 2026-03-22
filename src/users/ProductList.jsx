@@ -34,6 +34,7 @@ const ProductList = () => {
   const [totalPages, setTotalPages] = React.useState(1);
   const [totalProducts, setTotalProducts] = React.useState(0);
   const [showVoiceOrdering, setShowVoiceOrdering] = React.useState(false);
+  const [allProducts, setAllProducts] = React.useState([]);
   const [addedId, setAddedId] = React.useState(null);
   const navigate = useNavigate();
 
@@ -48,9 +49,19 @@ const ProductList = () => {
   }, []);
 
   useEffect(() => {
+    try {
+      const token = localStorage.getItem("token");
+      if (token) {
+        const payload = JSON.parse(atob(token.split(".")[1]));
+        setAdmin(payload?.role === "admin");
+      }
+    } catch {
+      setAdmin(false);
+    }
+  }, []);
+
+  useEffect(() => {
     fetchProducts();
-    const user = JSON.parse(localStorage.getItem("user"));
-    setAdmin(user?.role === "admin");
   }, [refresh, currentPage, search, category]);
 
   const fetchProducts = async () => {
@@ -448,7 +459,15 @@ const ProductList = () => {
           <motion.button
             whileHover={{ scale: 1.1, rotate: 12 }}
             whileTap={{ scale: 0.95 }}
-            onClick={() => setShowVoiceOrdering(true)}
+            onClick={async () => {
+            try {
+              const res = await axios.get('https://backend-g-gold.vercel.app/api/products/get?page=1&limit=10000');
+              setAllProducts(res.data.products || []);
+            } catch {
+              setAllProducts(products);
+            }
+            setShowVoiceOrdering(true);
+          }}
             className="bg-gradient-to-r from-purple-500 to-indigo-500 text-white p-4 rounded-full shadow-2xl"
           >
             <Mic className="w-6 h-6" />
@@ -483,7 +502,7 @@ const ProductList = () => {
               className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
             >
               <VoiceOrdering
-                products={products}
+                products={allProducts.length > 0 ? allProducts : products}
                 onAddToCart={handleAddToCart}
                 onClose={() => setShowVoiceOrdering(false)}
                 navigate={navigate}
